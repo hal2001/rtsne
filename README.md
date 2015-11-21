@@ -5,7 +5,7 @@ Neighbor Embedding).
 
 I just wanted to teach myself how TSNE worked, while also learning non-trivial 
 and idiomatic R programming. No particular reason to use this fork, unless you
-are interested in debugging alternative implementation, in which case, this
+are interested in debugging alternative implementations, in which case, this
 has the advantage of adding an initialization from PCA option, so you can
 avoid random initialization.
 
