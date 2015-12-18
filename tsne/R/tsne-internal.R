@@ -117,6 +117,7 @@
 # Returns the score matrix.
 .scores_matrix <- function(X, ncol = min(nrow(X), base::ncol(X)),
                            verbose = FALSE) {
+  X <- scale(X, center = TRUE, scale = FALSE)
   # do SVD on X directly rather than forming covariance matrix
   ncomp <- ncol
   s <- svd(X, nu = ncomp, nv = 0)
