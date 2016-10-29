@@ -5,8 +5,7 @@ Version: 0.1-2
 Date: 2010-02-19
 Author: Justin Donaldson <jdonaldson@gmail.com>
 Maintainer: James Melville <jlmelville@gmail.com>
-Description: A fork of Justin Donaldson's "pure R" implementation of the t-SNE
-algorithm.
+Description: A fork of Justin Donaldson's "pure R" implementation t-SNE.
 License: GPL
 LazyLoad: yes
 RoxygenNote: 5.0.1
