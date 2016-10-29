@@ -4,8 +4,9 @@ Title: T-distributed Stochastic Neighbor Embedding for R (t-SNE)
 Version: 0.1-2
 Date: 2010-02-19
 Author: Justin Donaldson <jdonaldson@gmail.com>
-Maintainer: Justin Donaldson <jdonaldson@gmail.com>
-Description: A "pure R" implementation of the t-SNE algorithm.
+Maintainer: James Melville <jlmelville@gmail.com>
+Description: A fork of Justin Donaldson's "pure R" implementation of the t-SNE
+algorithm.
 License: GPL
 LazyLoad: yes
 RoxygenNote: 5.0.1
