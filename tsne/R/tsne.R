@@ -34,6 +34,7 @@
 #' @param exaggeration_off_iter Iteration at which early exaggeration is turned
 #' off.
 #' @return The embedded output coordinates.
+#' @export
 tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
                  perplexity = 30, max_iter = 1000, min_cost = 0,
                  epoch_callback = NULL, whiten = TRUE, init_from_PCA = FALSE,
@@ -67,7 +68,7 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
   } else if (init_from_PCA) {
     ydata <- .scores_matrix(X, ncol = k, verbose = TRUE)
   } else {
-    ydata <- matrix(rnorm(k * n), n)
+    ydata <- matrix(stats::rnorm(k * n), n)
   }
 
   P <- .x2p(X, perplexity, 1e-05)$P

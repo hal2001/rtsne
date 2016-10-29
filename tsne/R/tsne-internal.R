@@ -25,7 +25,7 @@
   if (class(X) == "dist") {
       D <- X
   } else {
-      D <- dist(X)
+      D <- stats::dist(X)
   }
   n <- attr(D, "Size")
 
