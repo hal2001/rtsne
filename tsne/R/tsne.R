@@ -84,7 +84,7 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
   Q <- matrix(0, nrow(P), ncol(P))
 
   for (iter in 1:max_iter) {
-    if (iter %% epoch == 0) {
+    if (iter %% epoch == 0 || iter == 1) {
       # epoch
       cost <- sum(apply(P * log((P + eps) / (Q + eps)), 1, sum))
       message("Epoch: Iteration #", iter, " error is: ", cost)
