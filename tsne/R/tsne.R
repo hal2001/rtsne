@@ -34,6 +34,16 @@
 #' @param exaggeration_off_iter Iteration at which early exaggeration is turned
 #' off.
 #' @return The embedded output coordinates.
+#' @examples
+#' \dontrun{
+#' colors = rainbow(length(unique(iris$Species)))
+#' names(colors) = unique(iris$Species)
+#' ecb = function(x, y) {
+#'   plot(x, t = 'n')
+#'   text(x, labels = iris$Species, col = colors[iris$Species])
+#' }
+#' tsne_iris = tsne(iris[, 1:4], epoch_callback = ecb, perplexity = 50)
+#' }
 #' @export
 tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
                  perplexity = 30, max_iter = 1000, min_cost = 0,
@@ -49,6 +59,7 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
     X <- X - min(X)
     X <- X / max(X)
     initial_dims <- min(initial_dims, ncol(X))
+    browser()
     if (whiten) {
       message("Whitening")
       X <- .whiten(as.matrix(X), n.comp = initial_dims)
