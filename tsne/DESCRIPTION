@@ -8,4 +8,4 @@ Maintainer: James Melville <jlmelville@gmail.com>
 Description: A fork of Justin Donaldson's "pure R" implementation t-SNE.
 License: GPL
 LazyLoad: yes
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1
