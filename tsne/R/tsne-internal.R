@@ -98,7 +98,7 @@
   if (row.norm) {
     X <- t(scale(X, scale = row.norm))
   } else {
-    t(X)
+    X <- t(X)
   }
 
   if (verbose) {
