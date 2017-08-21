@@ -149,5 +149,12 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
       message("Switching off exaggeration at iter ", iter)
     }
   }
+
+  cost <- sum(apply(P * log((P + eps) / (Q + eps)), 1, sum))
+  message("Final configuration error is: ", cost)
+  if (!is.null(epoch_callback)) {
+    epoch_callback(ydata)
+  }
+
   ydata
 }
