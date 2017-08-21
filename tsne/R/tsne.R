@@ -59,7 +59,6 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
     X <- X - min(X)
     X <- X / max(X)
     initial_dims <- min(initial_dims, ncol(X))
-    browser()
     if (whiten) {
       message("Whitening")
       X <- .whiten(as.matrix(X), n.comp = initial_dims)
