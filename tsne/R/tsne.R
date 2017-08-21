@@ -87,6 +87,7 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
   P[P < eps] <- eps
   P <- P / sum(P)
 
+
   P <- P * initial_P_gain
   grads <- matrix(0, nrow(ydata), ncol(ydata))
   incs <- matrix(0, nrow(ydata), ncol(ydata))
@@ -94,10 +95,17 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
   Q <- matrix(0, nrow(P), ncol(P))
 
   for (iter in 1:max_iter) {
-    if (iter %% epoch == 0 || iter == 1) {
+    # Don't do epoch on iteration 1, Q hasn't been calculated yet
+    if ((iter %% epoch == 0 || iter == 2)  && iter != 1) {
       # epoch
       cost <- sum(apply(P * log((P + eps) / (Q + eps)), 1, sum))
-      message("Epoch: Iteration #", iter, " error is: ", cost)
+      if (iter == 2) {
+        message("Initial configuration, error is: ", cost)
+      }
+      else {
+        message("Epoch: Iteration #", iter, " error is: ", cost)
+      }
+
       if (cost < min_cost) {
         break
       }
@@ -126,8 +134,10 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
     gains[gains < min_gain] <- min_gain
 
     incs <- momentum * incs - epsilon * (gains * grads)
+
     ydata <- ydata + incs
     ydata <- sweep(ydata, 2, apply(ydata, 2, mean))
+
     if (iter == mom_switch_iter) {
       momentum <- final_momentum
       message("Switching to final momentum ",
