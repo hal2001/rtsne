@@ -129,6 +129,8 @@ tsne <- function(X, initial_config = NULL, k = 2,
     Q <- W / sum(W)
     if (any(is.nan(W))) {
       message("NaN in grad. descent")
+      # Give up and return the last iteration's result
+      return(Y)
     }
     Q[Q < eps] <- eps
     K <- 4 * (P - Q) * W
