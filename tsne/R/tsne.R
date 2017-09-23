@@ -28,7 +28,7 @@
 #' \code{momentum} to \code{final_momentum}.
 #' @param eta Learning rate value.
 #' @param min_gain Minimum gradient descent step size.
-#' @param initial_P_gain Value to multiply input probabilities by, during the
+#' @param exaggerate Value to multiply input probabilities by, during the
 #' early exaggeration phase. Not used if \code{initial_config} is not
 #' \code{NULL}.
 #' @param exaggeration_off_iter Iteration at which early exaggeration is turned
@@ -52,7 +52,7 @@ tsne <- function(X, initial_config = NULL, k = 2,
                  epoch_callback = NULL, epoch = 100, min_cost = 0,
                  momentum = 0.5, final_momentum = 0.8, mom_switch_iter = 250,
                  eta = 500, min_gain = 0.01,
-                 initial_P_gain = 4, exaggeration_off_iter = 100) {
+                 exaggerate = 4, exaggeration_off_iter = 100) {
 
   if (methods::is(X, "dist")) {
     n <- attr(X, "Size")
@@ -77,7 +77,7 @@ tsne <- function(X, initial_config = NULL, k = 2,
         "initial_config argument does not match necessary configuration for X")
     }
     Y <- initial_config
-    initial_P_gain <- 1
+    exaggerate <- 1
   } else if (init_from_PCA) {
     Y <- .scores_matrix(X, ncol = k, verbose = TRUE)
   } else {
@@ -90,7 +90,7 @@ tsne <- function(X, initial_config = NULL, k = 2,
   P[P < eps] <- eps
   P <- P / sum(P)
 
-  P <- P * initial_P_gain
+  P <- P * exaggerate
   grads <- matrix(0, n, k)
   incs <- matrix(0, n, k)
   gains <- matrix(1, n, k)
@@ -127,7 +127,7 @@ tsne <- function(X, initial_config = NULL, k = 2,
     }
 
     if (iter == exaggeration_off_iter && is.null(initial_config)) {
-      P <- P / initial_P_gain
+      P <- P / exaggerate
       message("Switching off exaggeration at iter ", iter)
     }
 
