@@ -172,9 +172,9 @@ tsne <- function(X, initial_config = NULL, k = 2,
       if (cost < min_cost) {
         break
       }
-    }
-    if (!is.null(epoch_callback)) {
-      epoch_callback(Y)
+      if (!is.null(epoch_callback)) {
+        epoch_callback(Y)
+      }
     }
   }
 
