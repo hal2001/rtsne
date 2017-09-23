@@ -7,5 +7,7 @@ Author: Justin Donaldson <jdonaldson@gmail.com>
 Maintainer: James Melville <jlmelville@gmail.com>
 Description: A fork of Justin Donaldson's "pure R" implementation t-SNE.
 License: GPL
+Imports:
+    methods
 LazyLoad: yes
 RoxygenNote: 6.0.1
