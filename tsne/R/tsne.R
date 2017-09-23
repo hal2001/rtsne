@@ -26,7 +26,7 @@
 #' @param final_momentum Final momentum value.
 #' @param mom_switch_iter Iteration at which the momentum will switch from
 #' \code{momentum} to \code{final_momentum}.
-#' @param epsilon Learning rate value.
+#' @param eta Learning rate value.
 #' @param min_gain Minimum gradient descent step size.
 #' @param initial_P_gain Value to multiply input probabilities by, during the
 #' early exaggeration phase. Not used if \code{initial_config} is not
@@ -49,7 +49,7 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
                  perplexity = 30, max_iter = 1000, min_cost = 0,
                  epoch_callback = NULL, whiten = TRUE, init_from_PCA = FALSE,
                  epoch = 100, momentum = 0.5, final_momentum = 0.8,
-                 mom_switch_iter = 250, epsilon = 500, min_gain = 0.01,
+                 mom_switch_iter = 250, eta = 500, min_gain = 0.01,
                  initial_P_gain = 4, exaggeration_off_iter = 100) {
   if (methods::is(X, "dist")) {
     n <- attr(X, "Size")
@@ -112,7 +112,7 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
              (gains * 0.8) * abs(sign(grads) == sign(incs))
     gains[gains < min_gain] <- min_gain
 
-    incs <- momentum * incs - epsilon * (gains * grads)
+    incs <- momentum * incs - eta * (gains * grads)
 
     Y <- Y + incs
     Y <- sweep(Y, 2, colMeans(Y))
