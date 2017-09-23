@@ -103,9 +103,9 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
       message("NaN in grad. descent")
     }
     Q[Q < eps] <- eps
-    stiffnesses <- 4 * (P - Q) * W
+    K <- 4 * (P - Q) * W
     for (i in 1:n) {
-      grads[i, ] <- colSums(sweep(-Y, 2, -Y[i, ]) * stiffnesses[, i])
+      grads[i, ] <- colSums(sweep(-Y, 2, -Y[i, ]) * K[, i])
     }
 
     gains <- (gains + 0.2) * abs(sign(grads) != sign(incs)) +
