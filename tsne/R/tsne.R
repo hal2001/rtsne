@@ -45,11 +45,13 @@
 #' tsne_iris = tsne(iris[, 1:4], epoch_callback = ecb, perplexity = 50)
 #' }
 #' @export
-tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
-                 perplexity = 30, max_iter = 1000, min_cost = 0,
-                 epoch_callback = NULL, whiten = TRUE, init_from_PCA = FALSE,
-                 epoch = 100, momentum = 0.5, final_momentum = 0.8,
-                 mom_switch_iter = 250, eta = 500, min_gain = 0.01,
+tsne <- function(X, initial_config = NULL, k = 2,
+                 perplexity = 30, max_iter = 1000,
+                 whiten = TRUE, initial_dims = 30,
+                 init_from_PCA = FALSE,
+                 epoch_callback = NULL, epoch = 100, min_cost = 0,
+                 momentum = 0.5, final_momentum = 0.8, mom_switch_iter = 250,
+                 eta = 500, min_gain = 0.01,
                  initial_P_gain = 4, exaggeration_off_iter = 100) {
   if (methods::is(X, "dist")) {
     n <- attr(X, "Size")
@@ -88,10 +90,10 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
   P <- P / sum(P)
 
   P <- P * initial_P_gain
-  grads <- matrix(0, nrow(Y), ncol(Y))
-  incs <- matrix(0, nrow(Y), ncol(Y))
-  gains <- matrix(1, nrow(Y), ncol(Y))
-  Q <- matrix(0, nrow(P), ncol(P))
+  grads <- matrix(0, n, k)
+  incs <- matrix(0, n, k)
+  gains <- matrix(1, n, k)
+  Q <- matrix(0, n, n)
 
   for (iter in 1:max_iter) {
     D2 <- apply(Y ^ 2, 1, sum)
