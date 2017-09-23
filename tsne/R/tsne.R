@@ -120,7 +120,7 @@ tsne <- function(X, initial_config = NULL, k = 2,
   Q <- matrix(0, n, n)
 
   for (iter in 1:max_iter) {
-    D2 <- apply(Y ^ 2, 1, sum)
+    D2 <- rowSums(Y * Y)
     D2 <- D2 + sweep(-2 * Y %*% t(Y), 2, -t(D2))
     W <- 1 / (1 + D2)
     diag(W) <- 0
