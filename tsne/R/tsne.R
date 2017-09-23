@@ -87,7 +87,6 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
   P[P < eps] <- eps
   P <- P / sum(P)
 
-
   P <- P * initial_P_gain
   grads <- matrix(0, nrow(ydata), ncol(ydata))
   incs <- matrix(0, nrow(ydata), ncol(ydata))
@@ -95,28 +94,9 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
   Q <- matrix(0, nrow(P), ncol(P))
 
   for (iter in 1:max_iter) {
-    # Don't do epoch on iteration 1, Q hasn't been calculated yet
-    if ((iter %% epoch == 0 || iter == 2)  && iter != 1) {
-      # epoch
-      cost <- sum(apply(P * log((P + eps) / (Q + eps)), 1, sum))
-      if (iter == 2) {
-        message("Initial configuration, error is: ", cost)
-      }
-      else {
-        message("Epoch: Iteration #", iter, " error is: ", cost)
-      }
-
-      if (cost < min_cost) {
-        break
-      }
-      if (!is.null(epoch_callback)) {
-        epoch_callback(ydata)
-      }
-    }
-
-    sum_ydata <- apply(ydata ^ 2, 1, sum)
-    num <- 1 /
-      (1 + sum_ydata + sweep(-2 * ydata %*% t(ydata), 2, -t(sum_ydata)))
+    D2 <- apply(ydata ^ 2, 1, sum)
+    D2 <- D2 + sweep(-2 * ydata %*% t(ydata), 2, -t(D2))
+    num <- 1 / (1 + D2)
     diag(num) <- 0
     Q <- num / sum(num)
     if (any(is.nan(num))) {
@@ -125,8 +105,7 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
     Q[Q < eps] <- eps
     stiffnesses <- 4 * (P - Q) * num
     for (i in 1:n) {
-      grads[i, ] <- apply(sweep(-ydata, 2, -ydata[i, ]) *
-                          stiffnesses[, i], 2, sum)
+      grads[i, ] <- colSums(sweep(-ydata, 2, -ydata[i, ]) * stiffnesses[, i])
     }
 
     gains <- (gains + 0.2) * abs(sign(grads) != sign(incs)) +
@@ -136,7 +115,7 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
     incs <- momentum * incs - epsilon * (gains * grads)
 
     ydata <- ydata + incs
-    ydata <- sweep(ydata, 2, apply(ydata, 2, mean))
+    ydata <- sweep(ydata, 2, colMeans(ydata))
 
     if (iter == mom_switch_iter) {
       momentum <- final_momentum
@@ -148,12 +127,18 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
       P <- P / initial_P_gain
       message("Switching off exaggeration at iter ", iter)
     }
-  }
 
-  cost <- sum(apply(P * log((P + eps) / (Q + eps)), 1, sum))
-  message("Final configuration error is: ", cost)
-  if (!is.null(epoch_callback)) {
-    epoch_callback(ydata)
+    if (iter %% epoch == 0) {
+      # epoch
+      cost <- sum(apply(P * log((P + eps) / (Q + eps)), 1, sum))
+      message("Epoch: Iteration #", iter, " error is: ", cost)
+      if (cost < min_cost) {
+        break
+      }
+    }
+    if (!is.null(epoch_callback)) {
+      epoch_callback(ydata)
+    }
   }
 
   ydata
