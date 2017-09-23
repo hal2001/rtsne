@@ -3,50 +3,43 @@
 A fork of Justin Donaldson's R package for t-SNE (t-Distributed Stochastic 
 Neighbor Embedding).
 
-I just wanted to teach myself how TSNE worked, while also learning non-trivial 
-and idiomatic R programming. No particular reason to use this fork, unless you
-are interested in debugging alternative implementations, in which case, this
-has the advantage of adding an initialization from PCA option, so you can
-avoid random initialization.
+I just wanted to teach myself how t-SNE worked, while also learning non-trivial 
+and idiomatic R programming. I have subsequently messed about with various
+parameters, exposing different options, and also added:
 
-### Changes
+* Extra initialization option: use the first two PCA scores. Makes embedding deterministic.
+* Early exaggeration option: the method suggested by [Linderman and Steinerberger](https://arxiv.org/abs/1706.02582).
 
-I made the following minor changes to make the output more reproducible and 
-easier to compare and debug with other implementations:
+## Installing:
 
-* Added an option to initialize from the first two PCA scores.
-* You can specify the early exaggeration, momentum and learning rate parameters.
-* Minor formatting changes to somewhat appease R studio diagnostics and `lintr`.
-* Documented the functions with Roxygen.
-
-### Installing:
 ```R
 install.packages("devtools")
 devtools::install_github("jlmelville/rtsne/tsne")
+library(tsne)
 ```
 
-### Using:
+## Using:
+
 ```R
-iris_plot <- function() {
-  colors = rainbow(length(unique(iris$Species)))
-  names(colors) = unique(iris$Species)
-  function(x,y) {
-    plot(x, t = 'n'); text(x, labels = iris$Species, col = colors[iris$Species])
-  }
+uniq_spec <- unique(iris$Species)
+colors <- rainbow(length(uniq_spec))
+names(colors) <- uniq_spec
+iris_plot <- function(x) {
+  plot(x, col = colors[iris$Species])
 }
 
-# whitens data by default, may not be what you want for non-imaging data
-tsne_iris_whitened <- tsne::tsne(iris[,1:4], perplexity = 25, 
-                                 epoch_callback = iris_plot())
-
-# use input data as-is
-tsne_iris <- tsne::tsne(iris[,1:4], perplexity = 25, epoch_callback = iris_plot(), 
-                        whiten = FALSE)
+tsne_iris <- tsne(iris[, -5], perplexity = 25, epoch_callback = iris_plot)
 
 # use PCA initialization so embedding is repeatable
-tsne_iris_pca <- tsne::tsne(iris[,1:4], perplexity = 25, epoch_callback = iris_plot(),
-                       whiten = FALSE, init_from_PCA = TRUE)
+tsne_iris_pca <- tsne(iris[, -5], perplexity = 25, epoch_callback = iris_plot, init_from_PCA = TRUE)
+
+# whitening
+tsne_iris_whiten <- tsne(iris[, -5], perplexity = 25, epoch_callback = iris_plot)
+
+# Dataset-dependent exaggeration suggested by Linderman and Steinerberger
+tsne_iris_ls <- tsne(iris[, -5], perplexity = 25, epoch_callback = iris_plot, exaggerate = "ls")
 ```
 
-### License
+## License
+
 [GPLv2 or later](https://www.gnu.org/licenses/gpl-2.0.txt).
