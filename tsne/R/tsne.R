@@ -11,7 +11,7 @@
 #' @param min_cost If the cost falls below this value, the optimization will
 #' stop early.
 #' @param epoch_callback Function to call after each epoch. Should have the
-#' signature \code{epoch_callback(ydata)} where \code{ydata} is the output
+#' signature \code{epoch_callback(Y)} where \code{Y} is the output
 #' coordinate matrix.
 #' @param whiten If \code{TRUE}, whitens the input data before calculating the
 #' input probabilities.
@@ -73,12 +73,12 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
       stop(
         "initial_config argument does not match necessary configuration for X")
     }
-    ydata <- initial_config
+    Y <- initial_config
     initial_P_gain <- 1
   } else if (init_from_PCA) {
-    ydata <- .scores_matrix(X, ncol = k, verbose = TRUE)
+    Y <- .scores_matrix(X, ncol = k, verbose = TRUE)
   } else {
-    ydata <- matrix(stats::rnorm(k * n), n)
+    Y <- matrix(stats::rnorm(k * n), n)
   }
 
   P <- .x2p(X, perplexity, 1e-05)$P
@@ -88,14 +88,14 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
   P <- P / sum(P)
 
   P <- P * initial_P_gain
-  grads <- matrix(0, nrow(ydata), ncol(ydata))
-  incs <- matrix(0, nrow(ydata), ncol(ydata))
-  gains <- matrix(1, nrow(ydata), ncol(ydata))
+  grads <- matrix(0, nrow(Y), ncol(Y))
+  incs <- matrix(0, nrow(Y), ncol(Y))
+  gains <- matrix(1, nrow(Y), ncol(Y))
   Q <- matrix(0, nrow(P), ncol(P))
 
   for (iter in 1:max_iter) {
-    D2 <- apply(ydata ^ 2, 1, sum)
-    D2 <- D2 + sweep(-2 * ydata %*% t(ydata), 2, -t(D2))
+    D2 <- apply(Y ^ 2, 1, sum)
+    D2 <- D2 + sweep(-2 * Y %*% t(Y), 2, -t(D2))
     num <- 1 / (1 + D2)
     diag(num) <- 0
     Q <- num / sum(num)
@@ -105,7 +105,7 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
     Q[Q < eps] <- eps
     stiffnesses <- 4 * (P - Q) * num
     for (i in 1:n) {
-      grads[i, ] <- colSums(sweep(-ydata, 2, -ydata[i, ]) * stiffnesses[, i])
+      grads[i, ] <- colSums(sweep(-Y, 2, -Y[i, ]) * stiffnesses[, i])
     }
 
     gains <- (gains + 0.2) * abs(sign(grads) != sign(incs)) +
@@ -114,8 +114,8 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
 
     incs <- momentum * incs - epsilon * (gains * grads)
 
-    ydata <- ydata + incs
-    ydata <- sweep(ydata, 2, colMeans(ydata))
+    Y <- Y + incs
+    Y <- sweep(Y, 2, colMeans(Y))
 
     if (iter == mom_switch_iter) {
       momentum <- final_momentum
@@ -137,9 +137,9 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
       }
     }
     if (!is.null(epoch_callback)) {
-      epoch_callback(ydata)
+      epoch_callback(Y)
     }
   }
 
-  ydata
+  Y
 }
