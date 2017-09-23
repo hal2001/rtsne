@@ -51,7 +51,7 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
                  epoch = 100, momentum = 0.5, final_momentum = 0.8,
                  mom_switch_iter = 250, epsilon = 500, min_gain = 0.01,
                  initial_P_gain = 4, exaggeration_off_iter = 100) {
-  if (class(X) == "dist") {
+  if (methods::is(X, "dist")) {
     n <- attr(X, "Size")
   } else {
     message("Range scaling X")

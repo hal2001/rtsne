@@ -22,7 +22,7 @@
 # distribution has the specified perplexity (within the supplied tolerance).
 # Returns a list containing the probabilities and beta values.
 .x2p <- function(X, perplexity = 15, tol = 1e-05) {
-  if (class(X) == "dist") {
+  if (methods::is(X, "dist")) {
       D <- X
   } else {
       D <- stats::dist(X)
