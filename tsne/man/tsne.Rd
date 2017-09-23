@@ -4,8 +4,8 @@
 \alias{tsne}
 \title{Embed a dataset using t-distributed stochastic neighbor embedding.}
 \usage{
-tsne(X, initial_config = NULL, k = 2, perplexity = 30, max_iter = 1000,
-  whiten = FALSE, whiten_dims = 30, init_from_PCA = FALSE,
+tsne(X, k = 2, scale = "range", init = "rand", perplexity = 30,
+  max_iter = 1000, whiten = FALSE, whiten_dims = 30,
   epoch_callback = NULL, epoch = 100, min_cost = 0, momentum = 0.5,
   final_momentum = 0.8, mom_switch_iter = 250, eta = 500,
   min_gain = 0.01, exaggerate = 4, exaggeration_off_iter = 100)
@@ -13,9 +13,22 @@ tsne(X, initial_config = NULL, k = 2, perplexity = 30, max_iter = 1000,
 \arguments{
 \item{X}{Input coordinates or distance matrix.}
 
-\item{initial_config}{Initial coordinates for the output coordinates.}
+\item{k}{Number of output dimensions for the embedding.}
 
-\item{k}{Number of output dimensions for the embeddding.}
+\item{scale}{How to preprocess \code{X}. One of: \code{"none"} or
+(\code{NULL}), which applies no further preprocessing; \code{"range"},
+which range scales the matrix elements between 0 and 1; \code{"bh"}, which
+applies the same scaling in Barnes-Hut t-SNE, where the columns are mean
+centered and then the elements divided by absolute maximum value.}
+
+\item{init}{How to initialize the output coordinates. One of: \code{"rand"},
+which initializes from a Gaussian distribution with mean 0 and standard
+deviation 1e-4; \code{"pca"}, which uses the first \code{k} scores of the
+PCA: columns are centered, but no scaling beyond that which is applied by
+the \code{scale} parameter is carried out; \code{"spca"}, which uses the
+PCA scores and then scales each score to a standard deviation of 1e-4; or a
+matrix can be used to set the coordinates directly. It must have dimensions
+\code{n} by \code{k}, where \code{n} is the number of rows in \code{X}.}
 
 \item{perplexity}{The target perplexity for parameterizing the input
 probabilities.}
@@ -25,18 +38,12 @@ probabilities.}
 \item{whiten}{If \code{TRUE}, whitens the input data before calculating the
 input probabilities.}
 
-\item{whiten_dims}{Number of dimensions to use if the data is preprocessed
-by whitening. Must not be greater than the number of columns in \code{X}.}
-
-\item{init_from_PCA}{if set to \code{TRUE}, output coordinates are
-initialized from the first \code{k} scores of the PCA. If not \code{TRUE},
-then the output coordinates are initialized from a Gaussian distribution
-with mean 0 and standard deviation 1e-4. Ignored if \code{initial_config} is
-not \code{NULL}.}
+\item{whiten_dims}{Number of dimensions to use if the data is preprocessed by
+whitening. Must not be greater than the number of columns in \code{X}.}
 
 \item{epoch_callback}{Function to call after each epoch. Should have the
-signature \code{epoch_callback(Y)} where \code{Y} is the output
-coordinate matrix.}
+signature \code{epoch_callback(Y)} where \code{Y} is the output coordinate
+matrix.}
 
 \item{epoch}{After every \code{epoch} number of steps, calculates and
 displays the cost value and calls \code{epoch_callback}, if supplied.}
@@ -55,8 +62,8 @@ stop early.}
 
 \item{min_gain}{Minimum gradient descent step size.}
 
-\item{exaggerate}{Numerical value to multiply input probabilities by,
-during the early exaggeration phase. Not used if \code{initial_config} is not
+\item{exaggerate}{Numerical value to multiply input probabilities by, during
+the early exaggeration phase. Not used if \code{initial_config} is not
 \code{NULL}. May also provide the string \code{"ls"}, in which case the
 dataset-dependent exaggeration technique suggested by Linderman and
 Steinerberger (2017) is used.}
@@ -81,6 +88,9 @@ ecb = function(x, y) {
 tsne_iris <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50)
 # Use the early exaggeration suggested by Linderman and Steinerberger
 tsne_iris_ls <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50, exaggerate = "ls")
+# Make embedding deterministic by initializing with scaled PCA scores
+tsne_iris_spca <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50, exaggerate = "ls",
+                       scale = "spca")
 }
 }
 \references{

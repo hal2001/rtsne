@@ -1,40 +1,47 @@
 #' Embed a dataset using t-distributed stochastic neighbor embedding.
 #'
 #' @param X Input coordinates or distance matrix.
-#' @param initial_config Initial coordinates for the output coordinates.
-#' @param k Number of output dimensions for the embeddding.
-#' @param whiten_dims Number of dimensions to use if the data is preprocessed
-#' by whitening. Must not be greater than the number of columns in \code{X}.
+#' @param k Number of output dimensions for the embedding.
+#' @param scale How to preprocess \code{X}. One of: \code{"none"} or
+#'   (\code{NULL}), which applies no further preprocessing; \code{"range"},
+#'   which range scales the matrix elements between 0 and 1; \code{"bh"}, which
+#'   applies the same scaling in Barnes-Hut t-SNE, where the columns are mean
+#'   centered and then the elements divided by absolute maximum value.
+#' @param init How to initialize the output coordinates. One of: \code{"rand"},
+#'   which initializes from a Gaussian distribution with mean 0 and standard
+#'   deviation 1e-4; \code{"pca"}, which uses the first \code{k} scores of the
+#'   PCA: columns are centered, but no scaling beyond that which is applied by
+#'   the \code{scale} parameter is carried out; \code{"spca"}, which uses the
+#'   PCA scores and then scales each score to a standard deviation of 1e-4; or a
+#'   matrix can be used to set the coordinates directly. It must have dimensions
+#'   \code{n} by \code{k}, where \code{n} is the number of rows in \code{X}.
 #' @param perplexity The target perplexity for parameterizing the input
-#' probabilities.
+#'   probabilities.
 #' @param max_iter Maximum number of iterations in the optimization.
-#' @param min_cost If the cost falls below this value, the optimization will
-#' stop early.
-#' @param epoch_callback Function to call after each epoch. Should have the
-#' signature \code{epoch_callback(Y)} where \code{Y} is the output
-#' coordinate matrix.
 #' @param whiten If \code{TRUE}, whitens the input data before calculating the
-#' input probabilities.
-#' @param init_from_PCA if set to \code{TRUE}, output coordinates are
-#' initialized from the first \code{k} scores of the PCA. If not \code{TRUE},
-#' then the output coordinates are initialized from a Gaussian distribution
-#' with mean 0 and standard deviation 1e-4. Ignored if \code{initial_config} is
-#' not \code{NULL}.
+#'   input probabilities.
+#' @param whiten_dims Number of dimensions to use if the data is preprocessed by
+#'   whitening. Must not be greater than the number of columns in \code{X}.
+#' @param min_cost If the cost falls below this value, the optimization will
+#'   stop early.
+#' @param epoch_callback Function to call after each epoch. Should have the
+#'   signature \code{epoch_callback(Y)} where \code{Y} is the output coordinate
+#'   matrix.
 #' @param epoch After every \code{epoch} number of steps, calculates and
-#' displays the cost value and calls \code{epoch_callback}, if supplied.
+#'   displays the cost value and calls \code{epoch_callback}, if supplied.
 #' @param momentum Initial momentum value.
 #' @param final_momentum Final momentum value.
 #' @param mom_switch_iter Iteration at which the momentum will switch from
-#' \code{momentum} to \code{final_momentum}.
+#'   \code{momentum} to \code{final_momentum}.
 #' @param eta Learning rate value.
 #' @param min_gain Minimum gradient descent step size.
-#' @param exaggerate Numerical value to multiply input probabilities by,
-#' during the early exaggeration phase. Not used if \code{initial_config} is not
-#' \code{NULL}. May also provide the string \code{"ls"}, in which case the
-#' dataset-dependent exaggeration technique suggested by Linderman and
-#' Steinerberger (2017) is used.
+#' @param exaggerate Numerical value to multiply input probabilities by, during
+#'   the early exaggeration phase. Not used if \code{initial_config} is not
+#'   \code{NULL}. May also provide the string \code{"ls"}, in which case the
+#'   dataset-dependent exaggeration technique suggested by Linderman and
+#'   Steinerberger (2017) is used.
 #' @param exaggeration_off_iter Iteration at which early exaggeration is turned
-#' off.
+#'   off.
 #' @return The embedded output coordinates.
 #' @examples
 #' \dontrun{
@@ -47,6 +54,9 @@
 #' tsne_iris <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50)
 #' # Use the early exaggeration suggested by Linderman and Steinerberger
 #' tsne_iris_ls <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50, exaggerate = "ls")
+#' # Make embedding deterministic by initializing with scaled PCA scores
+#' tsne_iris_spca <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50, exaggerate = "ls",
+#'                        scale = "spca")
 #' }
 #' @references
 #' Van der Maaten, L., & Hinton, G. (2008).
@@ -59,10 +69,9 @@
 #' \emph{arXiv preprint} \emph{arXiv}:1706.02582.
 #' \url{https://arxiv.org/abs/1706.02582}
 #' @export
-tsne <- function(X, initial_config = NULL, k = 2,
+tsne <- function(X, k = 2, scale = "range", init = "rand",
                  perplexity = 30, max_iter = 1000,
                  whiten = FALSE, whiten_dims = 30,
-                 init_from_PCA = FALSE,
                  epoch_callback = NULL, epoch = 100, min_cost = 0,
                  momentum = 0.5, final_momentum = 0.8, mom_switch_iter = 250,
                  eta = 500, min_gain = 0.01,
@@ -71,10 +80,24 @@ tsne <- function(X, initial_config = NULL, k = 2,
   if (methods::is(X, "dist")) {
     n <- attr(X, "Size")
   } else {
-    message("Range scaling X")
-    X <- as.matrix(X)
-    X <- X - min(X)
-    X <- X / max(X)
+    if (!is.null(scale)) {
+      scale <- match.arg(tolower(scale), c("none", "range", "bh"))
+
+      switch(scale,
+        range = {
+          message("Range scaling X")
+          X <- as.matrix(X)
+          X <- X - min(X)
+          X <- X / max(X)
+        },
+        bh = {
+          message("Normalizing BH-style")
+          X <- base::scale(X, scale = FALSE)
+          X <- X / abs(max(X))
+        }
+      )
+    }
+
     whiten_dims <- min(whiten_dims, ncol(X))
     if (whiten) {
       message("Whitening")
@@ -83,22 +106,40 @@ tsne <- function(X, initial_config = NULL, k = 2,
     n <- nrow(X)
   }
 
-  eps <- .Machine$double.eps # machine precision
-
-  if (!is.null(initial_config) && is.matrix(initial_config)) {
-    if (nrow(initial_config) != n | ncol(initial_config) != k) {
-      stop(
-        "initial_config argument does not match necessary configuration for X")
+  if (!is.null(init)) {
+    if (methods::is(init, "matrix")) {
+      if (nrow(init) != n || ncol(init) != k) {
+        stop("init matrix does not match necessary configuration for X")
+      }
+      Y <- init
+      exaggerate <- 1
     }
-    Y <- initial_config
-    exaggerate <- 1
-  } else {
-    if (init_from_PCA) {
-      Y <- .scores_matrix(X, ncol = k, verbose = TRUE)
-    } else {
-      Y <- matrix(stats::rnorm(k * n), n)
+    else {
+      init <- match.arg(tolower(init), c("rand", "pca", "spca"))
+      Y <- switch(init,
+        pca = {
+          message("Initializing from PCA scores")
+          .scores_matrix(X, ncol = k, verbose = TRUE)
+        },
+        spca = {
+          message("Initializing from scaled PCA scores")
+          scores <- .scores_matrix(X, ncol = k, verbose = TRUE)
+          scale(scores, scale = apply(scores, 2, stats::sd) / 1e-4)
+        },
+        rand = {
+          message("Initializing from random normal")
+          matrix(stats::rnorm(k * n, sd = 1e-4), n)
+        }
+      )
     }
   }
+
+  # Display initialization
+  if (!is.null(epoch_callback)) {
+    epoch_callback(Y)
+  }
+
+  eps <- .Machine$double.eps # machine precision
 
   P <- .x2p(X, perplexity, 1e-05)$P
   P <- 0.5 * (P + t(P))
@@ -158,7 +199,7 @@ tsne <- function(X, initial_config = NULL, k = 2,
               formatC(final_momentum), " at iter ", iter)
     }
 
-    if (iter == exaggeration_off_iter && is.null(initial_config)) {
+    if (iter == exaggeration_off_iter && !methods::is(init, "matrix")) {
       if (tolower(exaggerate) == "ls") {
         message("Switching off Linderman-Steinerberger exaggeration at iter ",
                 iter)
