@@ -3,7 +3,7 @@
 #' @param X Input coordinates or distance matrix.
 #' @param initial_config Initial coordinates for the output coordinates.
 #' @param k Number of output dimensions for the embeddding.
-#' @param initial_dims Number of dimensions to use if the data is preprocessed
+#' @param whiten_dims Number of dimensions to use if the data is preprocessed
 #' by whitening. Must not be greater than the number of columns in \code{X}.
 #' @param perplexity The target perplexity for parameterizing the input
 #' probabilities.
@@ -47,12 +47,13 @@
 #' @export
 tsne <- function(X, initial_config = NULL, k = 2,
                  perplexity = 30, max_iter = 1000,
-                 whiten = TRUE, initial_dims = 30,
+                 whiten = FALSE, whiten_dims = 30,
                  init_from_PCA = FALSE,
                  epoch_callback = NULL, epoch = 100, min_cost = 0,
                  momentum = 0.5, final_momentum = 0.8, mom_switch_iter = 250,
                  eta = 500, min_gain = 0.01,
                  initial_P_gain = 4, exaggeration_off_iter = 100) {
+
   if (methods::is(X, "dist")) {
     n <- attr(X, "Size")
   } else {
@@ -60,10 +61,10 @@ tsne <- function(X, initial_config = NULL, k = 2,
     X <- as.matrix(X)
     X <- X - min(X)
     X <- X / max(X)
-    initial_dims <- min(initial_dims, ncol(X))
+    whiten_dims <- min(whiten_dims, ncol(X))
     if (whiten) {
       message("Whitening")
-      X <- .whiten(as.matrix(X), n.comp = initial_dims)
+      X <- .whiten(as.matrix(X), n.comp = whiten_dims)
     }
     n <- nrow(X)
   }
