@@ -28,9 +28,11 @@
 #' \code{momentum} to \code{final_momentum}.
 #' @param eta Learning rate value.
 #' @param min_gain Minimum gradient descent step size.
-#' @param exaggerate Value to multiply input probabilities by, during the
-#' early exaggeration phase. Not used if \code{initial_config} is not
-#' \code{NULL}.
+#' @param exaggerate Numerical value to multiply input probabilities by,
+#' during the early exaggeration phase. Not used if \code{initial_config} is not
+#' \code{NULL}. May also provide the string \code{"ls"}, in which case the
+#' dataset-dependent exaggeration technique suggested by Linderman and
+#' Steinerberger (2017) is used.
 #' @param exaggeration_off_iter Iteration at which early exaggeration is turned
 #' off.
 #' @return The embedded output coordinates.
@@ -44,6 +46,16 @@
 #' }
 #' tsne_iris = tsne(iris[, 1:4], epoch_callback = ecb, perplexity = 50)
 #' }
+#' @references
+#' Van der Maaten, L., & Hinton, G. (2008).
+#' Visualizing data using t-SNE.
+#' \emph{Journal of Machine Learning Research}, \emph{9} (2579-2605).
+#' \url{http://www.jmlr.org/papers/v9/vandermaaten08a.html}
+#'
+#' Linderman, G. C., & Steinerberger, S. (2017).
+#' Clustering with t-SNE, provably.
+#' \emph{arXiv preprint} \emph{arXiv}:1706.02582.
+#' \url{https://arxiv.org/abs/1706.02582}
 #' @export
 tsne <- function(X, initial_config = NULL, k = 2,
                  perplexity = 30, max_iter = 1000,
@@ -78,10 +90,12 @@ tsne <- function(X, initial_config = NULL, k = 2,
     }
     Y <- initial_config
     exaggerate <- 1
-  } else if (init_from_PCA) {
-    Y <- .scores_matrix(X, ncol = k, verbose = TRUE)
   } else {
-    Y <- matrix(stats::rnorm(k * n), n)
+    if (init_from_PCA) {
+      Y <- .scores_matrix(X, ncol = k, verbose = TRUE)
+    } else {
+      Y <- matrix(stats::rnorm(k * n), n)
+    }
   }
 
   P <- .x2p(X, perplexity, 1e-05)$P
@@ -90,7 +104,16 @@ tsne <- function(X, initial_config = NULL, k = 2,
   P[P < eps] <- eps
   P <- P / sum(P)
 
-  P <- P * exaggerate
+  # Used during Linderman-Steinerberger exaggeration
+  ls_exaggerate <- 0.1 * n
+  if (tolower(exaggerate) == "ls") {
+    message("Linderman-Steinerberger exaggeration = ", formatC(ls_exaggerate))
+    P <- P * ls_exaggerate
+  }
+  else {
+    P <- P * exaggerate
+  }
+
   grads <- matrix(0, n, k)
   incs <- matrix(0, n, k)
   gains <- matrix(1, n, k)
@@ -111,11 +134,16 @@ tsne <- function(X, initial_config = NULL, k = 2,
       grads[i, ] <- colSums(sweep(-Y, 2, -Y[i, ]) * K[, i])
     }
 
-    gains <- (gains + 0.2) * abs(sign(grads) != sign(incs)) +
-             (gains * 0.8) * abs(sign(grads) == sign(incs))
-    gains[gains < min_gain] <- min_gain
-
-    incs <- momentum * incs - eta * (gains * grads)
+    if (tolower(exaggerate) == "ls" && iter <= exaggeration_off_iter) {
+      # during LS exaggeration, use gradient descent only with eta = 1
+      incs <- -grads
+    }
+    else {
+      gains <- (gains + 0.2) * abs(sign(grads) != sign(incs)) +
+        (gains * 0.8) * abs(sign(grads) == sign(incs))
+      gains[gains < min_gain] <- min_gain
+      incs <- momentum * incs - eta * (gains * grads)
+    }
 
     Y <- Y + incs
     Y <- sweep(Y, 2, colMeans(Y))
@@ -127,8 +155,14 @@ tsne <- function(X, initial_config = NULL, k = 2,
     }
 
     if (iter == exaggeration_off_iter && is.null(initial_config)) {
-      P <- P / exaggerate
-      message("Switching off exaggeration at iter ", iter)
+      if (tolower(exaggerate) == "ls") {
+        message("Switching off Linderman-Steinerberger exaggeration at iter ",
+                iter)
+        P <- P / ls_exaggerate
+      } else {
+        message("Switching off exaggeration at iter ", iter)
+        P <- P / exaggerate
+      }
     }
 
     if (iter %% epoch == 0) {
