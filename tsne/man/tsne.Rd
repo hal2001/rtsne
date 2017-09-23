@@ -78,7 +78,9 @@ ecb = function(x, y) {
   plot(x, t = 'n')
   text(x, labels = iris$Species, col = colors[iris$Species])
 }
-tsne_iris = tsne(iris[, 1:4], epoch_callback = ecb, perplexity = 50)
+tsne_iris <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50)
+# Use the early exaggeration suggested by Linderman and Steinerberger
+tsne_iris_ls <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50, exaggerate = "ls")
 }
 }
 \references{
