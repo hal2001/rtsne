@@ -96,14 +96,14 @@ tsne <- function(X, initial_config = NULL, k = 2, initial_dims = 30,
   for (iter in 1:max_iter) {
     D2 <- apply(Y ^ 2, 1, sum)
     D2 <- D2 + sweep(-2 * Y %*% t(Y), 2, -t(D2))
-    num <- 1 / (1 + D2)
-    diag(num) <- 0
-    Q <- num / sum(num)
-    if (any(is.nan(num))) {
+    W <- 1 / (1 + D2)
+    diag(W) <- 0
+    Q <- W / sum(W)
+    if (any(is.nan(W))) {
       message("NaN in grad. descent")
     }
     Q[Q < eps] <- eps
-    stiffnesses <- 4 * (P - Q) * num
+    stiffnesses <- 4 * (P - Q) * W
     for (i in 1:n) {
       grads[i, ] <- colSums(sweep(-Y, 2, -Y[i, ]) * stiffnesses[, i])
     }
