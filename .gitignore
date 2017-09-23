@@ -2,7 +2,6 @@
 *.tmproj
 *.Rcheck
 *.tar.gz
-tsne/man
 .Rproj.user
 .RData
 *.Rproj
