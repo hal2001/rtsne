@@ -17,6 +17,10 @@
 #'   \code{n} by \code{k}, where \code{n} is the number of rows in \code{X}.
 #' @param perplexity The target perplexity for parameterizing the input
 #'   probabilities.
+#' @param inp_kernel The input kernel function. Can be either \code{"gauss"}
+#'   (the default), or \code{"exp"}, which uses the unsquared distances.
+#'   \code{"exp"} is not the usual literature function, but matches the original
+#'   rtsne implementation (and it probably doesn't matter very much).
 #' @param max_iter Maximum number of iterations in the optimization.
 #' @param whiten If \code{TRUE}, whitens the input data before calculating the
 #'   input probabilities.
@@ -70,7 +74,7 @@
 #' \url{https://arxiv.org/abs/1706.02582}
 #' @export
 tsne <- function(X, k = 2, scale = "range", init = "rand",
-                 perplexity = 30, max_iter = 1000,
+                 perplexity = 30, inp_kernel = "gauss", max_iter = 1000,
                  whiten = FALSE, whiten_dims = 30,
                  epoch_callback = NULL, epoch = 100, min_cost = 0,
                  momentum = 0.5, final_momentum = 0.8, mom_switch_iter = 250,
@@ -141,7 +145,7 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
 
   eps <- .Machine$double.eps # machine precision
 
-  P <- .x2p(X, perplexity, 1e-05)$P
+  P <- .x2p(X, perplexity, 1e-5, kernel = inp_kernel)$P
   P <- 0.5 * (P + t(P))
 
   P[P < eps] <- eps

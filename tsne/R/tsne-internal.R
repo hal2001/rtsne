@@ -1,9 +1,6 @@
 # Given a vector of distances and an exponential parameter beta, calculates
 # the probabilities and corresponding Shannon entropy.
 #
-# NB this differs from the procedure in the TSNE paper by exponentially
-# weighting the distances, rather than the squared distances.
-#
 # Returns a list containing the Shannon entropy and the probability.
 .Hbeta <- function(D, beta) {
   P <- exp(-D * beta)
@@ -21,15 +18,22 @@
 # Calculates the input probabilities from X, such that each row probability
 # distribution has the specified perplexity (within the supplied tolerance).
 # Returns a list containing the probabilities and beta values.
-.x2p <- function(X, perplexity = 15, tol = 1e-05) {
+# NB the default kernel, "exp", differs from the procedure in the TSNE paper by
+# exponentially weighting the distances, rather than the squared distances.
+# Set the kernel to "gauss" to get the squared distance version.
+.x2p <- function(X, perplexity = 15, tol = 1e-5, kernel = "exp") {
   if (methods::is(X, "dist")) {
-      D <- X
+    D <- X
   } else {
-      D <- stats::dist(X)
+    D <- stats::dist(X)
   }
   n <- attr(D, "Size")
 
   D <- as.matrix(D)
+  if (kernel == "gauss") {
+    D <- D * D
+  }
+
   P <- matrix(0, n, n)
   beta <- rep(1, n)
   logU <- log(perplexity)

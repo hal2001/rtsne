@@ -5,10 +5,11 @@
 \title{Embed a dataset using t-distributed stochastic neighbor embedding.}
 \usage{
 tsne(X, k = 2, scale = "range", init = "rand", perplexity = 30,
-  max_iter = 1000, whiten = FALSE, whiten_dims = 30,
-  epoch_callback = NULL, epoch = 100, min_cost = 0, momentum = 0.5,
-  final_momentum = 0.8, mom_switch_iter = 250, eta = 500,
-  min_gain = 0.01, exaggerate = 4, exaggeration_off_iter = 100)
+  inp_kernel = "gauss", max_iter = 1000, whiten = FALSE,
+  whiten_dims = 30, epoch_callback = NULL, epoch = 100, min_cost = 0,
+  momentum = 0.5, final_momentum = 0.8, mom_switch_iter = 250,
+  eta = 500, min_gain = 0.01, exaggerate = 4,
+  exaggeration_off_iter = 100)
 }
 \arguments{
 \item{X}{Input coordinates or distance matrix.}
@@ -32,6 +33,11 @@ matrix can be used to set the coordinates directly. It must have dimensions
 
 \item{perplexity}{The target perplexity for parameterizing the input
 probabilities.}
+
+\item{inp_kernel}{The input kernel function. Can be either \code{"gauss"}
+(the default), or \code{"exp"}, which uses the unsquared distances.
+\code{"exp"} is not the usual literature function, but matches the original
+rtsne implementation (and it probably doesn't matter very much).}
 
 \item{max_iter}{Maximum number of iterations in the optimization.}
 
