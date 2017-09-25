@@ -9,7 +9,7 @@ tsne(X, k = 2, scale = "range", init = "rand", perplexity = 30,
   whiten_dims = 30, epoch_callback = NULL, epoch = 100, min_cost = 0,
   momentum = 0.5, final_momentum = 0.8, mom_switch_iter = 250,
   eta = 500, min_gain = 0.01, exaggerate = 4,
-  exaggeration_off_iter = 100)
+  exaggeration_off_iter = 100, verbose = FALSE)
 }
 \arguments{
 \item{X}{Input coordinates or distance matrix.}
@@ -76,6 +76,8 @@ Steinerberger (2017) is used.}
 
 \item{exaggeration_off_iter}{Iteration at which early exaggeration is turned
 off.}
+
+\item{verbose}{If \code{TRUE}, log progress messages to the console.}
 }
 \value{
 The embedded output coordinates.
@@ -91,7 +93,8 @@ ecb = function(x, y) {
   plot(x, t = 'n')
   text(x, labels = iris$Species, col = colors[iris$Species])
 }
-tsne_iris <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50)
+# verbose = TRUE logs progress to console
+tsne_iris <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50, verbose = TRUE)
 # Use the early exaggeration suggested by Linderman and Steinerberger
 tsne_iris_ls <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50, exaggerate = "ls")
 # Make embedding deterministic by initializing with scaled PCA scores

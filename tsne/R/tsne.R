@@ -46,6 +46,7 @@
 #'   Steinerberger (2017) is used.
 #' @param exaggeration_off_iter Iteration at which early exaggeration is turned
 #'   off.
+#' @param verbose If \code{TRUE}, log progress messages to the console.
 #' @return The embedded output coordinates.
 #' @examples
 #' \dontrun{
@@ -55,7 +56,8 @@
 #'   plot(x, t = 'n')
 #'   text(x, labels = iris$Species, col = colors[iris$Species])
 #' }
-#' tsne_iris <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50)
+#' # verbose = TRUE logs progress to console
+#' tsne_iris <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50, verbose = TRUE)
 #' # Use the early exaggeration suggested by Linderman and Steinerberger
 #' tsne_iris_ls <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50, exaggerate = "ls")
 #' # Make embedding deterministic by initializing with scaled PCA scores
@@ -79,7 +81,8 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
                  epoch_callback = NULL, epoch = 100, min_cost = 0,
                  momentum = 0.5, final_momentum = 0.8, mom_switch_iter = 250,
                  eta = 500, min_gain = 0.01,
-                 exaggerate = 4, exaggeration_off_iter = 100) {
+                 exaggerate = 4, exaggeration_off_iter = 100,
+                 verbose = FALSE) {
 
   if (methods::is(X, "dist")) {
     n <- attr(X, "Size")
@@ -89,13 +92,17 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
 
       switch(scale,
         range = {
-          message("Range scaling X")
+          if (verbose) {
+            message(date, " Range scaling X")
+          }
           X <- as.matrix(X)
           X <- X - min(X)
           X <- X / max(X)
         },
         bh = {
-          message("Normalizing BH-style")
+          if (verbose) {
+            message(date(), " Normalizing BH-style")
+          }
           X <- base::scale(X, scale = FALSE)
           X <- X / abs(max(X))
         }
@@ -104,7 +111,9 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
 
     whiten_dims <- min(whiten_dims, ncol(X))
     if (whiten) {
-      message("Whitening")
+      if (verbose) {
+        message(date(), " Whitening")
+      }
       X <- .whiten(as.matrix(X), n.comp = whiten_dims)
     }
     n <- nrow(X)
@@ -122,16 +131,22 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
       init <- match.arg(tolower(init), c("rand", "pca", "spca"))
       Y <- switch(init,
         pca = {
-          message("Initializing from PCA scores")
-          .scores_matrix(X, ncol = k, verbose = TRUE)
+          if (verbose) {
+            message(date(), " Initializing from PCA scores")
+          }
+          .scores_matrix(X, ncol = k, verbose = verbose)
         },
         spca = {
-          message("Initializing from scaled PCA scores")
-          scores <- .scores_matrix(X, ncol = k, verbose = TRUE)
+          if (verbose) {
+            message(date(), " Initializing from scaled PCA scores")
+          }
+          scores <- .scores_matrix(X, ncol = k, verbose = verbose)
           scale(scores, scale = apply(scores, 2, stats::sd) / 1e-4)
         },
         rand = {
-          message("Initializing from random normal")
+          if (verbose) {
+            message(date(), " Initializing from random Gaussian with sd = 1e-4")
+          }
           matrix(stats::rnorm(k * n, sd = 1e-4), n)
         }
       )
@@ -145,7 +160,7 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
 
   eps <- .Machine$double.eps # machine precision
 
-  P <- .x2p(X, perplexity, 1e-5, kernel = inp_kernel)$P
+  P <- .x2p(X, perplexity, 1e-5, kernel = inp_kernel, verbose = verbose)$P
   P <- 0.5 * (P + t(P))
   P[P < eps] <- eps
   P <- P / sum(P)
@@ -153,7 +168,9 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
   # Used during Linderman-Steinerberger exaggeration
   ls_exaggerate <- 0.1 * n
   if (tolower(exaggerate) == "ls") {
-    message("Linderman-Steinerberger exaggeration = ", formatC(ls_exaggerate))
+    if (verbose) {
+      message("Linderman-Steinerberger exaggeration = ", formatC(ls_exaggerate))
+    }
     P <- P * ls_exaggerate
   }
   else {
@@ -206,17 +223,23 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
 
     if (iter == mom_switch_iter) {
       momentum <- final_momentum
-      message("Switching to final momentum ",
-              formatC(final_momentum), " at iter ", iter)
+      if (verbose) {
+        message("Switching to final momentum ", formatC(final_momentum),
+                " at iter ", iter)
+      }
     }
 
     if (iter == exaggeration_off_iter && !methods::is(init, "matrix")) {
       if (tolower(exaggerate) == "ls") {
-        message("Switching off Linderman-Steinerberger exaggeration at iter ",
-                iter)
+        if (verbose) {
+          message("Switching off Linderman-Steinerberger exaggeration at iter ",
+                  iter)
+        }
         P <- P / ls_exaggerate
       } else {
-        message("Switching off exaggeration at iter ", iter)
+        if (verbose) {
+          message("Switching off exaggeration at iter ", iter)
+        }
         P <- P / exaggerate
       }
     }
@@ -224,7 +247,10 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
     if (iter %% epoch == 0) {
       # epoch
       cost <- sum(P * log((P + eps) / (Q + eps)))
-      message("Epoch: Iteration #", iter, " error is: ", cost)
+      if (verbose) {
+        message(date(), " Epoch: Iteration #", iter, " error is: ",
+                formatC(cost))
+      }
       if (cost < min_cost) {
         break
       }

@@ -29,7 +29,9 @@ iris_plot <- function(x) {
   plot(x, col = colors[iris$Species])
 }
 
-tsne_iris <- tsne(iris[, -5], perplexity = 25, epoch_callback = iris_plot)
+# set verbose = TRUE to log progress to the console
+tsne_iris <- tsne(iris[, -5], perplexity = 25, epoch_callback = iris_plot,
+                  verbose = TRUE)
 
 # use (scaled) PCA initialization so embedding is repeatable
 tsne_iris_spca <- tsne(iris[, -5], perplexity = 25, epoch_callback = iris_plot, init = "spca")

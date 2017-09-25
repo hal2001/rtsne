@@ -21,7 +21,8 @@
 # NB the default kernel, "exp", differs from the procedure in the TSNE paper by
 # exponentially weighting the distances, rather than the squared distances.
 # Set the kernel to "gauss" to get the squared distance version.
-.x2p <- function(X, perplexity = 15, tol = 1e-5, kernel = "exp") {
+.x2p <- function(X, perplexity = 15, tol = 1e-5, kernel = "exp",
+                 verbose = FALSE) {
   if (methods::is(X, "dist")) {
     D <- X
   } else {
@@ -71,22 +72,18 @@
       thisP <- hbeta$P
       Hdiff <- H - logU
       tries <- tries + 1
-  }
+    }
     P[i, -i] <- thisP
     perps[i] <- exp(H)
   }
-  sigma = sqrt(1 / beta)
+  sigma <- sqrt(1 / beta)
 
-  r  <- list(P = P, beta = beta)
-
-  message("sigma summary: ", paste(names(summary(sigma)), ":", summary(sigma),
-                                   "|", collapse = ""))
-  message("beta summary: ", paste(names(summary(beta)), ":", summary(beta),
-                                  "|", collapse = ""))
-  message("perp summary: ", paste(names(summary(perps)), ":", summary(perps),
-                                  "|", collapse = ""))
-
-  r
+  if (verbose) {
+    summary_sigma <- summary(sigma, digits = max(3, getOption("digits") - 3))
+    message(date(), " sigma summary: ",
+            paste(names(summary_sigma), ":", summary_sigma, "|", collapse = ""))
+  }
+  list(P = P, beta = beta)
 }
 
 # Whitens the input matrix X using n.comp components.
