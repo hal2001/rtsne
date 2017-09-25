@@ -161,7 +161,7 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
     P <- P * exaggerate
   }
 
-  grads <- matrix(0, n, k)
+  G <- matrix(0, n, k)
   incs <- matrix(0, n, k)
   gains <- matrix(1, n, k)
   Q <- matrix(0, n, n)
@@ -185,18 +185,18 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
 
     K <- 4 * (P - Q) * Q * sumW
     for (i in 1:n) {
-      grads[i, ] <- colSums(sweep(-Y, 2, -Y[i, ]) * K[, i])
+      G[i, ] <- colSums(sweep(-Y, 2, -Y[i, ]) * K[, i])
     }
 
     if (tolower(exaggerate) == "ls" && iter <= exaggeration_off_iter) {
       # during LS exaggeration, use gradient descent only with eta = 1
-      incs <- -grads
+      incs <- -G
     }
     else {
-      gains <- (gains + 0.2) * abs(sign(grads) != sign(incs)) +
-        (gains * 0.8) * abs(sign(grads) == sign(incs))
+      gains <- (gains + 0.2) * abs(sign(G) != sign(incs)) +
+               (gains * 0.8) * abs(sign(G) == sign(incs))
       gains[gains < min_gain] <- min_gain
-      incs <- momentum * incs - eta * (gains * grads)
+      incs <- momentum * incs - eta * (gains * G)
     }
 
     Y <- Y + incs
