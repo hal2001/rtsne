@@ -162,7 +162,7 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
   }
 
   G <- matrix(0, n, k)
-  incs <- matrix(0, n, k)
+  uY <- matrix(0, n, k)
   gains <- matrix(1, n, k)
   Q <- matrix(0, n, n)
 
@@ -190,16 +190,17 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
 
     if (tolower(exaggerate) == "ls" && iter <= exaggeration_off_iter) {
       # during LS exaggeration, use gradient descent only with eta = 1
-      incs <- -G
+      uY <- -G
     }
     else {
-      gains <- (gains + 0.2) * abs(sign(G) != sign(incs)) +
-               (gains * 0.8) * abs(sign(G) == sign(incs))
+      gains <- (gains + 0.2) * abs(sign(G) != sign(uY)) +
+               (gains * 0.8) * abs(sign(G) == sign(uY))
       gains[gains < min_gain] <- min_gain
-      incs <- momentum * incs - eta * (gains * G)
+      uY <- momentum * uY - eta * (gains * G)
     }
 
-    Y <- Y + incs
+    Y <- Y + uY
+    # Recenter Y
     Y <- sweep(Y, 2, colMeans(Y))
 
     if (iter == mom_switch_iter) {
