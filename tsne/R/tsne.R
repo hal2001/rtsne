@@ -147,7 +147,6 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
 
   P <- .x2p(X, perplexity, 1e-5, kernel = inp_kernel)$P
   P <- 0.5 * (P + t(P))
-
   P[P < eps] <- eps
   P <- P / sum(P)
 
@@ -224,7 +223,7 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
 
     if (iter %% epoch == 0) {
       # epoch
-      cost <- sum(apply(P * log((P + eps) / (Q + eps)), 1, sum))
+      cost <- sum(P * log((P + eps) / (Q + eps)))
       message("Epoch: Iteration #", iter, " error is: ", cost)
       if (cost < min_cost) {
         break
