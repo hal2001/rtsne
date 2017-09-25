@@ -193,10 +193,12 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
       uY <- -G
     }
     else {
-      gains <- (gains + 0.2) * abs(sign(G) != sign(uY)) +
-               (gains * 0.8) * abs(sign(G) == sign(uY))
+      # compare signs of G with -update (== previous G, if we ignore momentum)
+      # abs converts TRUE/FALSE to 1/0
+      dbd <- abs(sign(G) != sign(uY))
+      gains <- (gains + 0.2) * dbd + (gains * 0.8) * (1 - dbd)
       gains[gains < min_gain] <- min_gain
-      uY <- momentum * uY - eta * (gains * G)
+      uY <- momentum * uY - eta * gains * G
     }
 
     Y <- Y + uY
