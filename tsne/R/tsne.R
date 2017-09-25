@@ -167,18 +167,23 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
   Q <- matrix(0, n, n)
 
   for (iter in 1:max_iter) {
-    D2 <- rowSums(Y * Y)
-    D2 <- D2 + sweep(-2 * Y %*% t(Y), 2, -t(D2))
-    W <- 1 / (1 + D2)
-    diag(W) <- 0
-    Q <- W / sum(W)
-    if (any(is.nan(W))) {
+    # D2
+    Q <- rowSums(Y * Y)
+    Q <- Q + sweep(-2 * Y %*% t(Y), 2, -t(Q))
+    # W
+    Q <- 1 / (1 + Q)
+    diag(Q) <- 0
+    if (any(is.nan(Q))) {
       message("NaN in grad. descent")
       # Give up and return the last iteration's result
       return(Y)
     }
+    sumW <- sum(Q)
+    # Q
+    Q <- Q / sum(Q)
     Q[Q < eps] <- eps
-    K <- 4 * (P - Q) * W
+
+    K <- 4 * (P - Q) * Q * sumW
     for (i in 1:n) {
       grads[i, ] <- colSums(sweep(-Y, 2, -Y[i, ]) * K[, i])
     }
