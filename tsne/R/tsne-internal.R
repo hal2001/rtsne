@@ -22,17 +22,20 @@
 # exponentially weighting the distances, rather than the squared distances.
 # Set the kernel to "gauss" to get the squared distance version.
 .x2p <- function(X, perplexity = 15, tol = 1e-5, kernel = "exp",
-                 verbose = FALSE) {
-  if (methods::is(X, "dist")) {
+                  verbose = FALSE) {
+  x_is_dist <- methods::is(X, "dist")
+  if (x_is_dist) {
     D <- X
-  } else {
-    D <- stats::dist(X)
-  }
-  n <- attr(D, "Size")
+    n <- attr(D, "Size")
 
-  D <- as.matrix(D)
-  if (kernel == "gauss") {
-    D <- D * D
+    D <- as.matrix(D)
+    if (kernel == "gauss") {
+      D <- D * D
+    }
+  }
+  else {
+    XX <- rowSums(X * X)
+    n <- nrow(X)
   }
 
   P <- matrix(0, n, n)
@@ -43,7 +46,18 @@
   for (i in 1:n) {
     betamin <- -Inf
     betamax <- Inf
-    Di <- D[i, -i]
+
+    if (x_is_dist) {
+      Di <- D[i, -i]
+    }
+    else {
+      Di <- (XX[i] + XX - 2 * as.vector(X %*% X[i, ]))[-i]
+      Di[Di < 0] <- 0
+      if (kernel == "exp") {
+        Di <- sqrt(Di)
+      }
+    }
+
     hbeta <- .Hbeta(Di, beta[i])
     H <- hbeta$H
     thisP <- hbeta$P
