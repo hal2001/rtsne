@@ -182,6 +182,10 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
   gains <- matrix(1, n, k)
   Q <- matrix(0, n, n)
 
+  if (max_iter < 1) {
+    return(Y)
+  }
+
   for (iter in 1:max_iter) {
     # D2
     Q <- rowSums(Y * Y)
