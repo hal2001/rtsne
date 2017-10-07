@@ -29,17 +29,21 @@ iris_plot <- function(x) {
   plot(x, col = colors[iris$Species])
 }
 
+# By default, we use all numeric columns found in a data frame, so you don't
+# need to filter out factor or strings
+tsne_iris <- tsne(iris, perplexity = 25, epoch_callback = iris_plot)
+
 # set verbose = TRUE to log progress to the console
-tsne_iris <- tsne(iris[, -5], perplexity = 25, epoch_callback = iris_plot,
-                  verbose = TRUE)
+tsne_iris <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, verbose = TRUE)
 
 # use (scaled) PCA initialization so embedding is repeatable
-tsne_iris_spca <- tsne(iris[, -5], perplexity = 25, epoch_callback = iris_plot, init = "spca")
+tsne_iris_spca <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, init = "spca")
 
 # whitening
-tsne_iris_whiten <- tsne(iris[, -5], perplexity = 25, epoch_callback = iris_plot)
+tsne_iris_whiten <- tsne(iris[, -5], perplexity = 25, epoch_callback = iris_plot,
+                         whiten = TRUE)
 
-# Dataset-dependent exaggeration suggested by Linderman and Steinerberger
+# dataset-dependent exaggeration suggested by Linderman and Steinerberger
 tsne_iris_ls <- tsne(iris[, -5], perplexity = 25, epoch_callback = iris_plot, exaggerate = "ls")
 ```
 

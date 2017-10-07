@@ -87,6 +87,12 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
   if (methods::is(X, "dist")) {
     n <- attr(X, "Size")
   } else {
+    indexes <- which(vapply(X, is.numeric, logical(1)))
+    if (verbose) {
+      message("Found ", length(indexes), " numeric columns")
+    }
+    X <- X[, indexes]
+
     if (!is.null(scale)) {
       scale <- match.arg(tolower(scale), c("none", "range", "bh"))
 
