@@ -93,7 +93,6 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
       switch(scale,
         range = {
           if (verbose) {
-            message(date, " Range scaling X")
             message(date(), " Range scaling X")
           }
           X <- as.matrix(X)
