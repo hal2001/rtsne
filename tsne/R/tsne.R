@@ -170,6 +170,10 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
     epoch_callback(Y)
   }
 
+  if (max_iter < 1) {
+    return(Y)
+  }
+
   eps <- .Machine$double.eps # machine precision
 
   P <- .x2p(X, perplexity, 1e-5, kernel = inp_kernel, verbose = verbose)$P
@@ -194,10 +198,6 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
   gains <- matrix(1, n, k)
   Q <- matrix(0, n, n)
 
-  if (max_iter < 1) {
-    return(Y)
-  }
-
   for (iter in 1:max_iter) {
     # D2
     Q <- rowSums(Y * Y)
@@ -214,12 +214,10 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
     # Q
     Q <- Q / sum(Q)
     Q[Q < eps] <- eps
-
     K <- 4 * (P - Q) * Q * sumW
     for (i in 1:n) {
       G[i, ] <- colSums(sweep(-Y, 2, -Y[i, ]) * K[, i])
     }
-
     if (tolower(exaggerate) == "ls" && iter <= exaggeration_off_iter) {
       # during LS exaggeration, use gradient descent only with eta = 1
       uY <- -G
