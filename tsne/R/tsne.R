@@ -91,6 +91,9 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
     if (verbose) {
       message("Found ", length(indexes), " numeric columns")
     }
+    if (length(indexes) == 0) {
+      stop("No numeric columns found")
+    }
     X <- X[, indexes]
 
     if (!is.null(scale)) {
