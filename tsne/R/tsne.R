@@ -114,6 +114,9 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
           }
           X <- base::scale(X, scale = FALSE)
           X <- X / abs(max(X))
+        },
+        none = {
+          X <- as.matrix(X)
         }
       )
     }
