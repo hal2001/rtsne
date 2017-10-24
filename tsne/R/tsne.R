@@ -2,11 +2,13 @@
 #'
 #' @param X Input coordinates or distance matrix.
 #' @param k Number of output dimensions for the embedding.
-#' @param scale How to preprocess \code{X}. One of: \code{"none"} or
-#'   (\code{NULL}), which applies no further preprocessing; \code{"range"},
-#'   which range scales the matrix elements between 0 and 1; \code{"bh"}, which
-#'   applies the same scaling in Barnes-Hut t-SNE, where the columns are mean
-#'   centered and then the elements divided by absolute maximum value.
+#' @param scale If \code{TRUE}, scale each column to zero mean and unit
+#'   variance. Alternatively, you may specify one of the following strings:
+#'   \code{"range"}, which range scales the matrix elements between 0 and 1;
+#'   \code{"bh"}, which applies the same scaling in Barnes-Hut t-SNE, where the
+#'   columns are mean centered and then the elements divided by absolute maximum
+#'   value; \code{"scale"} does the same as using \code{TRUE}. To use the input
+#'   data as-is, use \code{FALSE}, \code{NULL} or \code{"none"}.
 #' @param init How to initialize the output coordinates. One of: \code{"rand"},
 #'   which initializes from a Gaussian distribution with mean 0 and standard
 #'   deviation 1e-4; \code{"pca"}, which uses the first \code{k} scores of the
@@ -97,7 +99,15 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
     X <- X[, indexes]
 
     if (!is.null(scale)) {
-      scale <- match.arg(tolower(scale), c("none", "range", "bh"))
+      if (is.logical(scale)) {
+        if (scale) {
+          scale <- "scale"
+        }
+        else {
+          scale <- "none"
+        }
+      }
+      scale <- match.arg(tolower(scale), c("none", "scale", "range", "bh"))
 
       switch(scale,
         range = {
@@ -114,6 +124,16 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
           }
           X <- base::scale(X, scale = FALSE)
           X <- X / abs(max(X))
+        },
+        scale = {
+          if (verbose) {
+            message(date(), " Scaling to zero mean and unit variance")
+          }
+          X <- Filter(var, X)
+          if (verbose) {
+            message("Kept ", ncol(X), " non-zero-variance columns")
+          }
+          X <- base::scale(X, scale = TRUE)
         },
         none = {
           X <- as.matrix(X)
