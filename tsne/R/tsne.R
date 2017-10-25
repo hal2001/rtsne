@@ -129,7 +129,7 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
           if (verbose) {
             message(date(), " Scaling to zero mean and unit variance")
           }
-          X <- Filter(var, X)
+          X <- Filter(stats::var, X)
           if (verbose) {
             message("Kept ", ncol(X), " non-zero-variance columns")
           }
