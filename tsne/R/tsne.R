@@ -232,7 +232,7 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
     }
     sumW <- sum(Q)
     # Q
-    Q <- Q / sum(Q)
+    Q <- Q / sumW
     Q[Q < eps] <- eps
     K <- 4 * (P - Q) * Q * sumW
     for (i in 1:n) {
