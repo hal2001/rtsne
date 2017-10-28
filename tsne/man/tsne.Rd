@@ -6,10 +6,11 @@
 \usage{
 tsne(X, k = 2, scale = "range", init = "rand", perplexity = 30,
   inp_kernel = "gauss", max_iter = 1000, whiten = FALSE,
-  whiten_dims = 30, epoch_callback = NULL, epoch = 100, min_cost = 0,
-  momentum = 0.5, final_momentum = 0.8, mom_switch_iter = 250,
-  eta = 500, min_gain = 0.01, exaggerate = 4,
-  exaggeration_off_iter = 100, verbose = FALSE)
+  whiten_dims = 30, epoch_callback = NULL,
+  epoch = base::round(max_iter/10), min_cost = 0, momentum = 0.5,
+  final_momentum = 0.8, mom_switch_iter = 250, eta = 500,
+  min_gain = 0.01, exaggerate = 4, exaggeration_off_iter = 100,
+  verbose = FALSE)
 }
 \arguments{
 \item{X}{Input coordinates or distance matrix.}
