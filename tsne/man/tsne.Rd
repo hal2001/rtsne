@@ -9,7 +9,7 @@ tsne(X, k = 2, scale = "range", init = "rand", perplexity = 30,
   whiten_dims = 30, epoch_callback = NULL,
   epoch = base::round(max_iter/10), min_cost = 0, momentum = 0.5,
   final_momentum = 0.8, mom_switch_iter = 250, eta = 500,
-  min_gain = 0.01, exaggerate = 4, exaggeration_off_iter = 100,
+  min_gain = 0.01, exaggeration_factor = 4, exaggeration_off_iter = 100,
   verbose = FALSE)
 }
 \arguments{
@@ -71,7 +71,7 @@ stop early.}
 
 \item{min_gain}{Minimum gradient descent step size.}
 
-\item{exaggerate}{Numerical value to multiply input probabilities by, during
+\item{exaggeration_factor}{Numerical value to multiply input probabilities by, during
 the early exaggeration phase. Not used if \code{initial_config} is not
 \code{NULL}. May also provide the string \code{"ls"}, in which case the
 dataset-dependent exaggeration technique suggested by Linderman and
@@ -99,10 +99,11 @@ ecb = function(x, y) {
 # verbose = TRUE logs progress to console
 tsne_iris <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50, verbose = TRUE)
 # Use the early exaggeration suggested by Linderman and Steinerberger
-tsne_iris_ls <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50, exaggerate = "ls")
+tsne_iris_ls <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50,
+                     exaggeration_factor = "ls")
 # Make embedding deterministic by initializing with scaled PCA scores
-tsne_iris_spca <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50, exaggerate = "ls",
-                       scale = "spca")
+tsne_iris_spca <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50,
+                       exaggeration_factor = "ls", scale = "spca")
 }
 }
 \references{

@@ -41,7 +41,7 @@
 #'   \code{momentum} to \code{final_momentum}.
 #' @param eta Learning rate value.
 #' @param min_gain Minimum gradient descent step size.
-#' @param exaggerate Numerical value to multiply input probabilities by, during
+#' @param exaggeration_factor Numerical value to multiply input probabilities by, during
 #'   the early exaggeration phase. Not used if \code{initial_config} is not
 #'   \code{NULL}. May also provide the string \code{"ls"}, in which case the
 #'   dataset-dependent exaggeration technique suggested by Linderman and
@@ -61,10 +61,11 @@
 #' # verbose = TRUE logs progress to console
 #' tsne_iris <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50, verbose = TRUE)
 #' # Use the early exaggeration suggested by Linderman and Steinerberger
-#' tsne_iris_ls <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50, exaggerate = "ls")
+#' tsne_iris_ls <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50,
+#'                      exaggeration_factor = "ls")
 #' # Make embedding deterministic by initializing with scaled PCA scores
-#' tsne_iris_spca <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50, exaggerate = "ls",
-#'                        scale = "spca")
+#' tsne_iris_spca <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50,
+#'                        exaggeration_factor = "ls", scale = "spca")
 #' }
 #' @references
 #' Van der Maaten, L., & Hinton, G. (2008).
@@ -84,7 +85,7 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
                  min_cost = 0,
                  momentum = 0.5, final_momentum = 0.8, mom_switch_iter = 250,
                  eta = 500, min_gain = 0.01,
-                 exaggerate = 4, exaggeration_off_iter = 100,
+                 exaggeration_factor = 4, exaggeration_off_iter = 100,
                  verbose = FALSE) {
 
   if (methods::is(X, "dist")) {
@@ -158,7 +159,7 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
         stop("init matrix does not match necessary configuration for X")
       }
       Y <- init
-      exaggerate <- 1
+      exaggeration_factor <- 1
     }
     else {
       init <- match.arg(tolower(init), c("rand", "pca", "spca"))
@@ -188,7 +189,7 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
 
   # Display initialization
   if (!is.null(epoch_callback)) {
-    epoch_callback(Y)
+    do_callback(epoch_callback, Y, 0)
   }
 
   if (max_iter < 1) {
@@ -203,15 +204,15 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
   P <- P / sum(P)
 
   # Used during Linderman-Steinerberger exaggeration
-  ls_exaggerate <- 0.1 * n
-  if (tolower(exaggerate) == "ls") {
+  ls_exaggeration_factor <- 0.1 * n
+  if (tolower(exaggeration_factor) == "ls") {
     if (verbose) {
-      message("Linderman-Steinerberger exaggeration = ", formatC(ls_exaggerate))
+      message("Linderman-Steinerberger exaggeration = ", formatC(ls_exaggeration_factor))
     }
-    P <- P * ls_exaggerate
+    P <- P * ls_exaggeration_factor
   }
   else {
-    P <- P * exaggerate
+    P <- P * exaggeration_factor
   }
 
   G <- matrix(0, n, k)
@@ -239,7 +240,7 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
     for (i in 1:n) {
       G[i, ] <- colSums(sweep(-Y, 2, -Y[i, ]) * K[, i])
     }
-    if (tolower(exaggerate) == "ls" && iter <= exaggeration_off_iter) {
+    if (tolower(exaggeration_factor) == "ls" && iter <= exaggeration_off_iter) {
       # during LS exaggeration, use gradient descent only with eta = 1
       uY <- -G
     }
@@ -265,17 +266,17 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
     }
 
     if (iter == exaggeration_off_iter && !methods::is(init, "matrix")) {
-      if (tolower(exaggerate) == "ls") {
+      if (tolower(exaggeration_factor) == "ls") {
         if (verbose) {
           message("Switching off Linderman-Steinerberger exaggeration at iter ",
                   iter)
         }
-        P <- P / ls_exaggerate
+        P <- P / ls_exaggeration_factor
       } else {
         if (verbose) {
           message("Switching off exaggeration at iter ", iter)
         }
-        P <- P / exaggerate
+        P <- P / exaggeration_factor
       }
     }
 
@@ -290,10 +291,25 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
         break
       }
       if (!is.null(epoch_callback)) {
-        epoch_callback(Y)
+        do_callback(epoch_callback, Y, iter, cost)
       }
     }
   }
 
   Y
+}
+
+# Helper function for epoch callback, allowing user to supply callbacks with
+# multiple arities.
+do_callback <- function(cb, Y, iter, cost = NULL) {
+  nfs <- length(formals(cb))
+  if (nfs == 1) {
+    cb(Y)
+  }
+  else if (nfs == 2) {
+    cb(Y, iter)
+  }
+  else if (nfs == 3) {
+    cb(Y, iter, cost)
+  }
 }

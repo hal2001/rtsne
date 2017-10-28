@@ -44,7 +44,7 @@ tsne_iris_whiten <- tsne(iris[, -5], perplexity = 25, epoch_callback = iris_plot
                          whiten = TRUE)
 
 # dataset-dependent exaggeration suggested by Linderman and Steinerberger
-tsne_iris_ls <- tsne(iris[, -5], perplexity = 25, epoch_callback = iris_plot, exaggerate = "ls")
+tsne_iris_ls <- tsne(iris[, -5], perplexity = 25, epoch_callback = iris_plot, exaggeration_factor = "ls")
 ```
 
 ## License
