@@ -1,7 +1,7 @@
 # rtsne
 
-A fork of Justin Donaldson's R package for t-SNE (t-Distributed Stochastic 
-Neighbor Embedding).
+A fork of Justin Donaldson's R package for [t-SNE](https://lvdmaaten.github.io/tsne/) 
+(t-Distributed Stochastic Neighbor Embedding).
 
 I just wanted to teach myself how t-SNE worked, while also learning non-trivial 
 and idiomatic R programming. I have subsequently messed about with various
@@ -58,6 +58,60 @@ tsne_iris_ls <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, exaggera
 # return extra information in a list, like with Rtsne
 tsne_iris_extra <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, ret_extra = TRUE)
 ```
+
+## MNIST example
+
+This example follows that given in the original [t-SNE paper](http://jmlr.org/papers/v9/vandermaaten08a.html), 
+sampling 6,000 digits from the [MNIST database of handwritten digits](http://yann.lecun.com/exdb/mnist/).
+
+The parameters for the embedding are those given in the paper, except when PCA
+preprocessing is carried out to reduce the input data to 30 dimensions, no 
+scaling of the columns is carried out (each column *is* centered, however).
+It's not mentioned in the paper if any scaling is done as part of the PCA.
+Also, no specific scaling of the data is mentioned in the paper as part of the
+input processing, before the perplexity calibration is carried out. I range 
+scale the (PCA preprocessed data) between 0 and 1 over the entire matrix.
+Finally, rather than random initialization, the scaled PCA initialization is 
+used, which takes the first two score vectors and then scales them to give a
+standard deviation of 1e-4.
+
+```R
+# Download MNIST
+devtools::install_github("jlmelville/snedata")
+mnist <- snedata::download_mnist()
+
+# Sample 6,000 images using dplyr and magrittr to get 600 images per digit
+# install.packages(c("dpylr", "magrittr"))
+library("dplyr")
+library("magrittr")
+mnist6k <- sample_n(mnist %>% group_by(Label), 600)
+
+
+mnist6k_pca30 <- prcomp(mnist6k[, -785], retx = TRUE, rank. = 30)$x
+
+# Use vizier package for visualization
+devtools::install_github("jlmelville/vizier")
+library(vizier)
+tsne_cb <- function(df) {
+  function(Y, iter, cost = NULL) {
+    title <- paste0("iter: ", iter)
+    if (!is.null(cost)) {
+      title <- paste0(title, " cost = ", formatC(cost))
+    }
+    vizier::embed_plot(Y, df, title = title)
+  }
+}
+
+mnist6k_tsne <- tsne(mnist6k_pca30, scale = "range", init = "spca", perplexity = 40, 
+                     exaggeration_factor = 4, stop_lying_iter = 100, eta = 100, max_iter = 1000,
+                     epoch_callback = tsne_cb(mnist6k), ret_extra = TRUE, verbose = TRUE)
+```
+
+![Animated GIF of 6000 digits from MNIST optimized by t-SNE](img/mnist6k.gif)
+
+On my Sandy Bridge-era Windows laptop, this took about 80 minutes to complete 
+(the perplexity  calibration only took about 2 of those minutes) and seemed to 
+add about 2.5 GB of RAM onto my R session.
 
 ## License
 
