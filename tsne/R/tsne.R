@@ -46,7 +46,7 @@
 #'   \code{NULL}. May also provide the string \code{"ls"}, in which case the
 #'   dataset-dependent exaggeration technique suggested by Linderman and
 #'   Steinerberger (2017) is used.
-#' @param exaggeration_off_iter Iteration at which early exaggeration is turned
+#' @param stop_lying_iter Iteration at which early exaggeration is turned
 #'   off.
 #' @param verbose If \code{TRUE}, log progress messages to the console.
 #' @return The embedded output coordinates.
@@ -85,7 +85,7 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
                  min_cost = 0,
                  momentum = 0.5, final_momentum = 0.8, mom_switch_iter = 250,
                  eta = 500, min_gain = 0.01,
-                 exaggeration_factor = 4, exaggeration_off_iter = 100,
+                 exaggeration_factor = 4, stop_lying_iter = 100,
                  verbose = FALSE) {
 
   if (methods::is(X, "dist")) {
@@ -240,7 +240,7 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
     for (i in 1:n) {
       G[i, ] <- colSums(sweep(-Y, 2, -Y[i, ]) * K[, i])
     }
-    if (tolower(exaggeration_factor) == "ls" && iter <= exaggeration_off_iter) {
+    if (tolower(exaggeration_factor) == "ls" && iter <= stop_lying_iter) {
       # during LS exaggeration, use gradient descent only with eta = 1
       uY <- -G
     }
@@ -265,7 +265,7 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
       }
     }
 
-    if (iter == exaggeration_off_iter && !methods::is(init, "matrix")) {
+    if (iter == stop_lying_iter && !methods::is(init, "matrix")) {
       if (tolower(exaggeration_factor) == "ls") {
         if (verbose) {
           message("Switching off Linderman-Steinerberger exaggeration at iter ",

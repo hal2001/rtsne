@@ -9,7 +9,7 @@ tsne(X, k = 2, scale = "range", init = "rand", perplexity = 30,
   whiten_dims = 30, epoch_callback = NULL,
   epoch = base::round(max_iter/10), min_cost = 0, momentum = 0.5,
   final_momentum = 0.8, mom_switch_iter = 250, eta = 500,
-  min_gain = 0.01, exaggeration_factor = 4, exaggeration_off_iter = 100,
+  min_gain = 0.01, exaggeration_factor = 4, stop_lying_iter = 100,
   verbose = FALSE)
 }
 \arguments{
@@ -77,7 +77,7 @@ the early exaggeration phase. Not used if \code{initial_config} is not
 dataset-dependent exaggeration technique suggested by Linderman and
 Steinerberger (2017) is used.}
 
-\item{exaggeration_off_iter}{Iteration at which early exaggeration is turned
+\item{stop_lying_iter}{Iteration at which early exaggeration is turned
 off.}
 
 \item{verbose}{If \code{TRUE}, log progress messages to the console.}
