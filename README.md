@@ -64,13 +64,16 @@ tsne_iris_extra <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, ret_e
 This example follows that given in the original [t-SNE paper](http://jmlr.org/papers/v9/vandermaaten08a.html), 
 sampling 6,000 digits from the [MNIST database of handwritten digits](http://yann.lecun.com/exdb/mnist/).
 
-The parameters for the embedding are those given in the paper, except when PCA
-preprocessing is carried out to reduce the input data to 30 dimensions, no 
-scaling of the columns is carried out (each column *is* centered, however).
-It's not mentioned in the paper if any scaling is done as part of the PCA.
+The parameters for the embedding are those given in the paper. For the PCA
+preprocessing carried out to reduce the input data to 30 dimensions, no 
+scaling of the columns is carried out (each column *is* centered, however);
+it's not mentioned in the paper if any scaling is done as part of the PCA.
+
 Also, no specific scaling of the data is mentioned in the paper as part of the
-input processing, before the perplexity calibration is carried out. I range 
-scale the (PCA preprocessed data) between 0 and 1 over the entire matrix.
+input processing, before the perplexity calibration is carried out. The example
+below range scales the (PCA preprocessed data) between 0 and 1 over the entire
+matrix.
+
 Finally, rather than random initialization, the scaled PCA initialization is 
 used, which takes the first two score vectors and then scales them to give a
 standard deviation of 1e-4.
@@ -86,7 +89,7 @@ library("dplyr")
 library("magrittr")
 mnist6k <- sample_n(mnist %>% group_by(Label), 600)
 
-
+# Reduce input dimensionality from 784 to 30 via PCA
 mnist6k_pca30 <- prcomp(mnist6k[, -785], retx = TRUE, rank. = 30)$x
 
 # Use vizier package for visualization
