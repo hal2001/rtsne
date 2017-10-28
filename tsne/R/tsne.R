@@ -138,15 +138,18 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
 
   if (methods::is(X, "dist")) {
     n <- attr(X, "Size")
-  } else {
-    indexes <- which(vapply(X, is.numeric, logical(1)))
-    if (verbose) {
-      message("Found ", length(indexes), " numeric columns")
+  }
+  else {
+    if (methods::is(X, "data.frame")) {
+      indexes <- which(vapply(X, is.numeric, logical(1)))
+      if (verbose) {
+        message("Found ", length(indexes), " numeric columns")
+      }
+      if (length(indexes) == 0) {
+        stop("No numeric columns found")
+      }
+      X <- X[, indexes]
     }
-    if (length(indexes) == 0) {
-      stop("No numeric columns found")
-    }
-    X <- X[, indexes]
 
     if (is.null(scale)) {
       scale <- "none"
