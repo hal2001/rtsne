@@ -66,6 +66,7 @@
 #'   specified by the \code{init} parameter, or if a matrix was used, this will
 #'   contain the string \code{"matrix"}.
 #' \item{\code{iter}} Number of iterations the optimization carried out.
+#' \item{\code{time_secs}} Time taken for the embedding, in seconds.
 #' \item{\code{perplexity}} Target perplexity of the input probabilities, as
 #'   specified by the \code{perplexity} parameter.
 #' \item{\code{costs}} Embedding error associated with each observation. This is
@@ -129,6 +130,11 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
                  exaggeration_factor = 4, stop_lying_iter = 100,
                  ret_extra = FALSE,
                  verbose = FALSE) {
+
+  start_time <- NULL
+  if (ret_extra) {
+    start_time <- Sys.time()
+  }
 
   if (methods::is(X, "dist")) {
     n <- attr(X, "Size")
@@ -248,7 +254,8 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
   }
 
   if (max_iter < 1) {
-    return(ret_value(Y, ret_extra, X, scale, init, iter = 0))
+    return(ret_value(Y, ret_extra, X, scale, init, iter = 0,
+                     start_time = start_time))
   }
 
   eps <- .Machine$double.eps # machine precision
@@ -337,7 +344,8 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
     }
   }
 
-  ret_value(Y, ret_extra, X, scale, init, iter, P, Q, eps, perplexity, itercosts,
+  ret_value(Y, ret_extra, X, scale, init, iter, start_time,
+            P, Q, eps, perplexity, itercosts,
             stop_lying_iter, mom_switch_iter, momentum, final_momentum, eta,
             exaggeration_factor)
 }
@@ -381,19 +389,23 @@ do_epoch <- function(Y, P, Q, iter, eps = .Machine$double.eps,
 # If ret_extra is TRUE and iter > 0, then all the NULL-default parameters are
 # expected to be present. If iter == 0 then the return list will contain only
 # scaling and initialization information.
-ret_value <- function(Y, ret_extra, X, scale, init, iter, P = NULL, Q = NULL,
+ret_value <- function(Y, ret_extra, X, scale, init, iter, start_time = NULL,
+                      P = NULL, Q = NULL,
                       eps = NULL, perplexity = NULL, itercosts = NULL,
                       stop_lying_iter = NULL, mom_switch_iter = NULL,
                       momentum = NULL, final_momentum = NULL, eta = NULL,
                       exaggeration_factor = NULL) {
   if (ret_extra) {
+    end_time <- Sys.time()
+
     res <- list(
       Y = Y,
       N = nrow(X),
       origD = ncol(X),
       scale = scale,
       init = init,
-      iter = iter
+      iter = iter,
+      time_secs = as.numeric(end_time - start_time, units = "secs")
     )
 
     if (iter > 0) {

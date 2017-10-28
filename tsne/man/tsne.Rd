@@ -99,6 +99,7 @@ If \code{ret_extra} is \code{FALSE}, the embedded output coordinates
   specified by the \code{init} parameter, or if a matrix was used, this will
   contain the string \code{"matrix"}.
 \item{\code{iter}} Number of iterations the optimization carried out.
+\item{\code{time_secs}} Time taken for the embedding, in seconds.
 \item{\code{perplexity}} Target perplexity of the input probabilities, as
   specified by the \code{perplexity} parameter.
 \item{\code{costs}} Embedding error associated with each observation. This is
