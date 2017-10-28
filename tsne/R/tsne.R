@@ -1,4 +1,6 @@
-#' Embed a dataset using t-distributed stochastic neighbor embedding.
+#' t-Distributed Stochastic Neighbor Embedding
+#'
+#' Embed a dataset using t-SNE.
 #'
 #' @param X Input coordinates or distance matrix.
 #' @param k Number of output dimensions for the embedding.
@@ -48,8 +50,43 @@
 #'   Steinerberger (2017) is used.
 #' @param stop_lying_iter Iteration at which early exaggeration is turned
 #'   off.
+#' @param ret_extra If \code{TRUE}, return value is a list containing additional
+#'   details on the t-SNE procedure; otherwise just the output coordinates. See
+#'   the \code{Value} section for more.
 #' @param verbose If \code{TRUE}, log progress messages to the console.
-#' @return The embedded output coordinates.
+#' @return If \code{ret_extra} is \code{FALSE}, the embedded output coordinates
+#'   as a matrix. Otherwise, a list with the following items:
+#' \itemize{
+#' \item{\code{Y}} Matrix containing the embedded output coordinates.
+#' \item{\code{N}} Number of objects.
+#' \item{\code{origD}} Dimensionality of the input data.
+#' \item{\code{scale}} Scaling applied to input data, as specified by the
+#'   \code{scale} parameter.
+#' \item{\code{init}} Initialization type of the output coordinates, as
+#'   specified by the \code{init} parameter, or if a matrix was used, this will
+#'   contain the string \code{"matrix"}.
+#' \item{\code{iter}} Number of iterations the optimization carried out.
+#' \item{\code{perplexity}} Target perplexity of the input probabilities, as
+#'   specified by the \code{perplexity} parameter.
+#' \item{\code{costs}} Embedding error associated with each observation. This is
+#'   the sum of the absolute value of each component of the KL cost that the
+#'   observation is associated with, so don't expect these to sum to the
+#'   reported KL cost.
+#' \item{\code{itercosts}} KL cost at each epoch.
+#' \item{\code{stop_lying_iter}} Iteration at which early exaggeration is
+#'   stopped, as specified by the \code{stop_lying_iter} parameter.
+#' \item{\code{mom_switch_iter}} Iteration at which momentum used in
+#'   optimization switches from \code{momentum} to \code{final_momentum}, as
+#'   specified by the \code{mom_switch_iter} parameter.
+#' \item{\code{momentum}} Momentum used in the initial part of the optimization,
+#'   as specified by the \code{momentum} parameter.
+#' \item{\code{final_momentum}} Momentum used in the second part of the
+#'   optimization, as specified by the \code{final_momentum} parameter.
+#' \item{\code{eta}} Learning rate, as specified by the \code{eta} parameter.
+#' \item{\code{exaggeration_factor}} Multiplier of the input probabilities
+#'   during the exaggeration phase. If the Linderman-Steinerberger exaggeration
+#'   scheme is used, this value will have the name \code{"ls"}.
+#' }
 #' @examples
 #' \dontrun{
 #' colors = rainbow(length(unique(iris$Species)))
@@ -66,6 +103,10 @@
 #' # Make embedding deterministic by initializing with scaled PCA scores
 #' tsne_iris_spca <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50,
 #'                        exaggeration_factor = "ls", scale = "spca")
+#' # Return extra details about the embedding
+#' tsne_iris_extra <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50,
+#'                         exaggeration_factor = "ls", scale = "spca", ret_extra = TRUE)
+#'
 #' }
 #' @references
 #' Van der Maaten, L., & Hinton, G. (2008).
@@ -86,6 +127,7 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
                  momentum = 0.5, final_momentum = 0.8, mom_switch_iter = 250,
                  eta = 500, min_gain = 0.01,
                  exaggeration_factor = 4, stop_lying_iter = 100,
+                 ret_extra = FALSE,
                  verbose = FALSE) {
 
   if (methods::is(X, "dist")) {
@@ -161,6 +203,7 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
         stop("init matrix does not match necessary configuration for X")
       }
       Y <- init
+      init <- "matrix"
       exaggeration_factor <- 1
     }
     else {
@@ -194,8 +237,18 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
     do_callback(epoch_callback, Y, 0)
   }
 
+  itercosts <- c()
+  if (tolower(exaggeration_factor) == "ls") {
+    # Linderman-Steinerberger exaggeration
+    exaggeration_factor <- 0.1 * n
+    names(exaggeration_factor) <- "ls"
+  }
+  else {
+    names(exaggeration_factor) <- "ex"
+  }
+
   if (max_iter < 1) {
-    return(Y)
+    return(ret_value(Y, ret_extra, X, scale, init, iter = 0))
   }
 
   eps <- .Machine$double.eps # machine precision
@@ -205,22 +258,18 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
   P[P < eps] <- eps
   P <- P / sum(P)
 
-  # Used during Linderman-Steinerberger exaggeration
-  ls_exaggeration_factor <- 0.1 * n
-  if (tolower(exaggeration_factor) == "ls") {
+  if (names(exaggeration_factor) == "ls") {
     if (verbose) {
-      message("Linderman-Steinerberger exaggeration = ", formatC(ls_exaggeration_factor))
+      message("Linderman-Steinerberger exaggeration = ", formatC(exaggeration_factor))
     }
-    P <- P * ls_exaggeration_factor
   }
-  else {
-    P <- P * exaggeration_factor
-  }
+  P <- P * exaggeration_factor
 
   G <- matrix(0, n, k)
   uY <- matrix(0, n, k)
   gains <- matrix(1, n, k)
   Q <- matrix(0, n, n)
+  mu <- momentum
 
   for (iter in 1:max_iter) {
     # D2
@@ -232,7 +281,7 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
     if (any(is.nan(Q))) {
       message("NaN in grad. descent")
       # Give up and return the last iteration's result
-      return(Y)
+      break
     }
     sumW <- sum(Q)
     # Q
@@ -242,7 +291,7 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
     for (i in 1:n) {
       G[i, ] <- colSums(sweep(-Y, 2, -Y[i, ]) * K[, i])
     }
-    if (tolower(exaggeration_factor) == "ls" && iter <= stop_lying_iter) {
+    if (names(exaggeration_factor) == "ls" && iter <= stop_lying_iter) {
       # during LS exaggeration, use gradient descent only with eta = 1
       uY <- -G
     }
@@ -252,7 +301,7 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
       dbd <- abs(sign(G) != sign(uY))
       gains <- (gains + 0.2) * dbd + (gains * 0.8) * (1 - dbd)
       gains[gains < min_gain] <- min_gain
-      uY <- momentum * uY - eta * gains * G
+      uY <- mu * uY - eta * gains * G
     }
 
     Y <- Y + uY
@@ -260,45 +309,37 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
     Y <- sweep(Y, 2, colMeans(Y))
 
     if (iter == mom_switch_iter) {
-      momentum <- final_momentum
+      mu <- final_momentum
       if (verbose) {
         message("Switching to final momentum ", formatC(final_momentum),
                 " at iter ", iter)
       }
     }
 
-    if (iter == stop_lying_iter && !methods::is(init, "matrix")) {
-      if (tolower(exaggeration_factor) == "ls") {
-        if (verbose) {
-          message("Switching off Linderman-Steinerberger exaggeration at iter ",
-                  iter)
-        }
-        P <- P / ls_exaggeration_factor
-      } else {
-        if (verbose) {
-          message("Switching off exaggeration at iter ", iter)
-        }
-        P <- P / exaggeration_factor
+    if (iter == stop_lying_iter && init != "matrix") {
+      if (verbose) {
+        message("Switching off exaggeration at iter ", iter)
       }
+      P <- P / exaggeration_factor
     }
 
-    if (iter %% epoch == 0) {
-      # epoch
-      cost <- sum(P * log((P + eps) / (Q + eps)))
-      if (verbose) {
-        message(date(), " Epoch: Iteration #", iter, " error is: ",
-                formatC(cost))
+    if (iter %% epoch == 0 || iter == max_iter) {
+      cost <- do_epoch(Y, P, Q, iter, eps, epoch_callback, verbose)
+
+      if (ret_extra) {
+        names(cost) <- iter
+        itercosts <- c(itercosts, cost)
       }
+
       if (cost < min_cost) {
         break
-      }
-      if (!is.null(epoch_callback)) {
-        do_callback(epoch_callback, Y, iter, cost)
       }
     }
   }
 
-  Y
+  ret_value(Y, ret_extra, X, scale, init, iter, P, Q, eps, perplexity, itercosts,
+            stop_lying_iter, mom_switch_iter, momentum, final_momentum, eta,
+            exaggeration_factor)
 }
 
 # Helper function for epoch callback, allowing user to supply callbacks with
@@ -313,5 +354,72 @@ do_callback <- function(cb, Y, iter, cost = NULL) {
   }
   else if (nfs == 3) {
     cb(Y, iter, cost)
+  }
+}
+
+# Carry out epoch-related jobs, e.g. cost calculation, logging, callback
+do_epoch <- function(Y, P, Q, iter, eps = .Machine$double.eps,
+                     epoch_callback = NULL, verbose = FALSE) {
+  cost <- sum(P * log((P + eps) / (Q + eps)))
+
+  if (verbose) {
+    message(date(), " Iteration #", iter, " error is: ",
+            formatC(cost))
+  }
+
+  if (!is.null(epoch_callback)) {
+    do_callback(epoch_callback, Y, iter, cost)
+  }
+
+  cost
+}
+
+
+# Prepare the return value.
+# If ret_extra is TRUE, return a list with lots of extra info.
+# Otherwise, Y is returned directly.
+# If ret_extra is TRUE and iter > 0, then all the NULL-default parameters are
+# expected to be present. If iter == 0 then the return list will contain only
+# scaling and initialization information.
+ret_value <- function(Y, ret_extra, X, scale, init, iter, P = NULL, Q = NULL,
+                      eps = NULL, perplexity = NULL, itercosts = NULL,
+                      stop_lying_iter = NULL, mom_switch_iter = NULL,
+                      momentum = NULL, final_momentum = NULL, eta = NULL,
+                      exaggeration_factor = NULL) {
+  if (ret_extra) {
+    res <- list(
+      Y = Y,
+      N = nrow(X),
+      origD = ncol(X),
+      scale = scale,
+      init = init,
+      iter = iter
+    )
+
+    if (iter > 0) {
+      # this was already calculated in the final epoch, but unlikely to be
+      # worth the extra coupling and complication of getting it over here
+      costs <- colSums(P * log((P + eps) / (Q + eps)))
+
+      if (names(exaggeration_factor) != "ls") {
+        names(exaggeration_factor) <- NULL
+      }
+
+      res <- c(res, list(
+        perplexity = perplexity,
+        costs = costs,
+        itercosts = itercosts,
+        stop_lying_iter = stop_lying_iter,
+        mom_switch_iter = mom_switch_iter,
+        momentum = momentum,
+        final_momentum = final_momentum,
+        eta = eta,
+        exaggeration_factor = exaggeration_factor
+      ))
+    }
+    res
+  }
+  else {
+    Y
   }
 }

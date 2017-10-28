@@ -2,7 +2,7 @@
 % Please edit documentation in R/tsne.R
 \name{tsne}
 \alias{tsne}
-\title{Embed a dataset using t-distributed stochastic neighbor embedding.}
+\title{t-Distributed Stochastic Neighbor Embedding}
 \usage{
 tsne(X, k = 2, scale = "range", init = "rand", perplexity = 30,
   inp_kernel = "gauss", max_iter = 1000, whiten = FALSE,
@@ -10,7 +10,7 @@ tsne(X, k = 2, scale = "range", init = "rand", perplexity = 30,
   epoch = base::round(max_iter/10), min_cost = 0, momentum = 0.5,
   final_momentum = 0.8, mom_switch_iter = 250, eta = 500,
   min_gain = 0.01, exaggeration_factor = 4, stop_lying_iter = 100,
-  verbose = FALSE)
+  ret_extra = FALSE, verbose = FALSE)
 }
 \arguments{
 \item{X}{Input coordinates or distance matrix.}
@@ -80,13 +80,49 @@ Steinerberger (2017) is used.}
 \item{stop_lying_iter}{Iteration at which early exaggeration is turned
 off.}
 
+\item{ret_extra}{If \code{TRUE}, return value is a list containing additional
+details on the t-SNE procedure; otherwise just the output coordinates. See
+the \code{Value} section for more.}
+
 \item{verbose}{If \code{TRUE}, log progress messages to the console.}
 }
 \value{
-The embedded output coordinates.
+If \code{ret_extra} is \code{FALSE}, the embedded output coordinates
+  as a matrix. Otherwise, a list with the following items:
+\itemize{
+\item{\code{Y}} Matrix containing the embedded output coordinates.
+\item{\code{N}} Number of objects.
+\item{\code{origD}} Dimensionality of the input data.
+\item{\code{scale}} Scaling applied to input data, as specified by the
+  \code{scale} parameter.
+\item{\code{init}} Initialization type of the output coordinates, as
+  specified by the \code{init} parameter, or if a matrix was used, this will
+  contain the string \code{"matrix"}.
+\item{\code{iter}} Number of iterations the optimization carried out.
+\item{\code{perplexity}} Target perplexity of the input probabilities, as
+  specified by the \code{perplexity} parameter.
+\item{\code{costs}} Embedding error associated with each observation. This is
+  the sum of the absolute value of each component of the KL cost that the
+  observation is associated with, so don't expect these to sum to the
+  reported KL cost.
+\item{\code{itercosts}} KL cost at each epoch.
+\item{\code{stop_lying_iter}} Iteration at which early exaggeration is
+  stopped, as specified by the \code{stop_lying_iter} parameter.
+\item{\code{mom_switch_iter}} Iteration at which momentum used in
+  optimization switches from \code{momentum} to \code{final_momentum}, as
+  specified by the \code{mom_switch_iter} parameter.
+\item{\code{momentum}} Momentum used in the initial part of the optimization,
+  as specified by the \code{momentum} parameter.
+\item{\code{final_momentum}} Momentum used in the second part of the
+  optimization, as specified by the \code{final_momentum} parameter.
+\item{\code{eta}} Learning rate, as specified by the \code{eta} parameter.
+\item{\code{exaggeration_factor}} Multiplier of the input probabilities
+  during the exaggeration phase. If the Linderman-Steinerberger exaggeration
+  scheme is used, this value will have the name \code{"ls"}.
+}
 }
 \description{
-Embed a dataset using t-distributed stochastic neighbor embedding.
+Embed a dataset using t-SNE.
 }
 \examples{
 \dontrun{
@@ -104,6 +140,10 @@ tsne_iris_ls <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50,
 # Make embedding deterministic by initializing with scaled PCA scores
 tsne_iris_spca <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50,
                        exaggeration_factor = "ls", scale = "spca")
+# Return extra details about the embedding
+tsne_iris_extra <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50,
+                        exaggeration_factor = "ls", scale = "spca", ret_extra = TRUE)
+
 }
 }
 \references{

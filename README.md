@@ -10,6 +10,12 @@ parameters, exposing different options, and also added:
 * Extra initialization option: use the first two PCA scores. Makes embedding deterministic. 
 This can be scaled so the standard deviation is 1e-4 (as in the usual random initialization).
 * Early exaggeration option: the method suggested by [Linderman and Steinerberger](https://arxiv.org/abs/1706.02582).
+* Extra scaling options.
+* Changed some of the perplexity-calibration code to make it a bit faster.
+* Return more information (like the [Rtsne](https://cran.r-project.org/package=Rtsne) package)
+ by setting `ret_extra = TRUE`.
+* Exposed some extra parameters, using the same names as the Rtsne interface.
+* Various minor quality of life improvements.
 
 ## Installing:
 
@@ -39,12 +45,18 @@ tsne_iris <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, verbose = T
 # use (scaled) PCA initialization so embedding is repeatable
 tsne_iris_spca <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, init = "spca")
 
+# scale each input column to unit variance and zero mean
+tsne_iris_scale <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, scale = TRUE, init = "spca")
+
 # whitening
-tsne_iris_whiten <- tsne(iris[, -5], perplexity = 25, epoch_callback = iris_plot,
+tsne_iris_whiten <- tsne(iris, perplexity = 25, epoch_callback = iris_plot,
                          whiten = TRUE)
 
 # dataset-dependent exaggeration suggested by Linderman and Steinerberger
-tsne_iris_ls <- tsne(iris[, -5], perplexity = 25, epoch_callback = iris_plot, exaggeration_factor = "ls")
+tsne_iris_ls <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, exaggeration_factor = "ls")
+
+# return extra information in a list, like with Rtsne
+tsne_iris_extra <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, ret_extra = TRUE)
 ```
 
 ## License
