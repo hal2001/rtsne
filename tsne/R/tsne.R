@@ -100,48 +100,50 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
     }
     X <- X[, indexes]
 
-    if (!is.null(scale)) {
-      if (is.logical(scale)) {
-        if (scale) {
-          scale <- "scale"
-        }
-        else {
-          scale <- "none"
-        }
-      }
-      scale <- match.arg(tolower(scale), c("none", "scale", "range", "bh"))
-
-      switch(scale,
-        range = {
-          if (verbose) {
-            message(date(), " Range scaling X")
-          }
-          X <- as.matrix(X)
-          X <- X - min(X)
-          X <- X / max(X)
-        },
-        bh = {
-          if (verbose) {
-            message(date(), " Normalizing BH-style")
-          }
-          X <- base::scale(X, scale = FALSE)
-          X <- X / abs(max(X))
-        },
-        scale = {
-          if (verbose) {
-            message(date(), " Scaling to zero mean and unit variance")
-          }
-          X <- Filter(stats::var, X)
-          if (verbose) {
-            message("Kept ", ncol(X), " non-zero-variance columns")
-          }
-          X <- base::scale(X, scale = TRUE)
-        },
-        none = {
-          X <- as.matrix(X)
-        }
-      )
+    if (is.null(scale)) {
+      scale <- "none"
     }
+    if (is.logical(scale)) {
+      if (scale) {
+        scale <- "scale"
+      }
+      else {
+        scale <- "none"
+      }
+    }
+    scale <- match.arg(tolower(scale), c("none", "scale", "range", "bh"))
+
+    switch(scale,
+      range = {
+        if (verbose) {
+          message(date(), " Range scaling X")
+        }
+        X <- as.matrix(X)
+        X <- X - min(X)
+        X <- X / max(X)
+      },
+      bh = {
+        if (verbose) {
+          message(date(), " Normalizing BH-style")
+        }
+        X <- base::scale(X, scale = FALSE)
+        X <- X / abs(max(X))
+      },
+      scale = {
+        if (verbose) {
+          message(date(), " Scaling to zero mean and unit variance")
+        }
+        X <- Filter(stats::var, X)
+        if (verbose) {
+          message("Kept ", ncol(X), " non-zero-variance columns")
+        }
+        X <- base::scale(X, scale = TRUE)
+      },
+      none = {
+        X <- as.matrix(X)
+      }
+    )
+
 
     whiten_dims <- min(whiten_dims, ncol(X))
     if (whiten) {
