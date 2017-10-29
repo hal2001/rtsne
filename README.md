@@ -62,7 +62,8 @@ tsne_iris_extra <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, ret_e
 ## MNIST example
 
 This example follows that given in the original [t-SNE paper](http://jmlr.org/papers/v9/vandermaaten08a.html), 
-sampling 6,000 digits from the [MNIST database of handwritten digits](http://yann.lecun.com/exdb/mnist/).
+sampling 6,000 digits from the [MNIST database of handwritten digits](http://yann.lecun.com/exdb/mnist/)
+(via my [snedata package](https://github.com/jlmelville/snedata)).
 
 The parameters for the embedding are those given in the paper. For the PCA
 preprocessing carried out to reduce the input data to 30 dimensions, no 
@@ -77,6 +78,9 @@ matrix.
 Finally, rather than random initialization, the scaled PCA initialization is 
 used, which takes the first two score vectors and then scales them to give a
 standard deviation of 1e-4.
+
+For visualization of the embedding progress, I used my 
+[vizier package](https://github.com/jlmelville/vizier).
 
 ```R
 # Download MNIST
@@ -101,9 +105,12 @@ tsne_cb <- function(df) {
     if (!is.null(cost)) {
       title <- paste0(title, " cost = ", formatC(cost))
     }
-    vizier::embed_plot(Y, df, title = title)
+    embed_plot(Y, df, title = title)
   }
 }
+
+# If you don't care about seeing the iteration number and cost, you can just use:
+mnist6k_cb <- function(Y) { embed_plot(Y, mnist6k) }
 
 mnist6k_tsne <- tsne(mnist6k_pca30, scale = "range", init = "spca", perplexity = 40, 
                      exaggeration_factor = 4, stop_lying_iter = 100, eta = 100, max_iter = 1000,
