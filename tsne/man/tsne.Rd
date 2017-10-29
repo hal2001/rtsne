@@ -81,8 +81,11 @@ Steinerberger (2017) is used.}
 off.}
 
 \item{ret_extra}{If \code{TRUE}, return value is a list containing additional
-details on the t-SNE procedure; otherwise just the output coordinates. See
-the \code{Value} section for more.}
+values associated with the t-SNE procedure; otherwise just the output
+coordinates. You may also provide a vector of names of potentially large or
+expensive-to-calculate values to return, which will be returned in addition
+to those value which are returned when this value is \code{TRUE}. See the
+\code{Value} section for details.}
 
 \item{verbose}{If \code{TRUE}, log progress messages to the console.}
 }
@@ -121,6 +124,19 @@ If \code{ret_extra} is \code{FALSE}, the embedded output coordinates
   during the exaggeration phase. If the Linderman-Steinerberger exaggeration
   scheme is used, this value will have the name \code{"ls"}.
 }
+Additionally, if you set \code{ret_extra} to a vector of names, these will
+be returned in addition to the values given above. These values are optional
+and must be explicitly asked for, because they are either expensive to
+calculate, take up a lot of memory, or both. The avaiable optional values
+are:
+\itemize{
+\item{\code{X}} The input data, after filtering and scaling.
+\item{\code{P}} The input probabilities.
+\item{\code{Q}} The output probabilities.
+\item{\code{DX}} Input distance matrix. The same as \code{X} when the input
+  data is already a distance matrix.
+\item{\code{DY}} Output coordinate distance matrix.
+}
 }
 \description{
 Embed a dataset using t-SNE.
@@ -134,17 +150,21 @@ ecb = function(x, y) {
   text(x, labels = iris$Species, col = colors[iris$Species])
 }
 # verbose = TRUE logs progress to console
-tsne_iris <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50, verbose = TRUE)
+tsne_iris <- tsne(iris, epoch_callback = ecb, perplexity = 50, verbose = TRUE)
 # Use the early exaggeration suggested by Linderman and Steinerberger
-tsne_iris_ls <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50,
+tsne_iris_ls <- tsne(iris, epoch_callback = ecb, perplexity = 50,
                      exaggeration_factor = "ls")
 # Make embedding deterministic by initializing with scaled PCA scores
-tsne_iris_spca <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50,
+tsne_iris_spca <- tsne(iris, epoch_callback = ecb, perplexity = 50,
                        exaggeration_factor = "ls", scale = "spca")
 # Return extra details about the embedding
-tsne_iris_extra <- tsne(iris[, -5], epoch_callback = ecb, perplexity = 50,
+tsne_iris_extra <- tsne(iris, epoch_callback = ecb, perplexity = 50,
                         exaggeration_factor = "ls", scale = "spca", ret_extra = TRUE)
 
+# Return even more details (which can be slow to calculate or take up a lot of memory)
+tsne_iris_xextra <- tsne(iris, epoch_callback = ecb, perplexity = 50,
+                        exaggeration_factor = "ls", scale = "spca",
+                        ret_extra = c("P", "Q", "X", "DX", "DY"))
 }
 }
 \references{

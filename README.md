@@ -57,6 +57,11 @@ tsne_iris_ls <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, exaggera
 
 # return extra information in a list, like with Rtsne
 tsne_iris_extra <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, ret_extra = TRUE)
+
+# more (potentially large and expensive to calculate) return values, but you 
+# have to ask for them specifically
+tsne_iris_extra_extra <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, 
+                              ret_extra = c("P", "Q", "DX", "DY", "X"))
 ```
 
 ## MNIST example
