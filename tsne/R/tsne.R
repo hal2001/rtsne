@@ -381,6 +381,70 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
             exaggeration_factor, optionals = ret_optionals)
 }
 
+#' Best t-SNE Result From Multiple Initializations
+#'
+#' Run t-SNE multiple times from a random initialization, and return the
+#' embedding with the lowest cost.
+#'
+#' This function ignores any value of \code{init} you set, and uses
+#' \code{init = "rand"}.
+#'
+#' @param nrep Number of repeats.
+#' @param ... Arguments to apply to each \code{\link{tsne}} run.
+#' @return The \code{\link{tsne}} result with the lowest final cost.
+#' If \code{ret_extra} is not \code{FALSE}, then the final costs for all
+#' \code{nrep} runs are also included in the return value list as a vector
+#' called \code{all_costs}.
+#' @examples
+#' \dontrun{
+#' # Return best result out of five random initializations
+#' tsne_iris_best <- tsne_rep(nrep = 5, iris, perplexity = 50, ret_extra = TRUE)
+#' # How much do the costs vary between runs?
+#' range(tsne_iris_best$all_costs)
+#' # Display best embedding found
+#' plot(iris_best$Y)
+#' }
+#' @export
+tsne_rep <- function(nrep = 10, ...) {
+  if (nrep < 1) {
+    stop("nrep must be 1 or greater")
+  }
+  varargs <- list(...)
+  best_res <- NULL
+  best_cost <- Inf
+  all_costs <- c()
+  # Keep requested return type for final result
+  ret_extra <- varargs$ret_extra
+  # Inside loop, always return extra, so we can find the cost
+  if (!methods::is(ret_extra, "character") && !ret_extra) {
+    varargs$ret_extra <- TRUE
+  }
+
+  varargs$init <- "rand"
+  for (i in 1:nrep) {
+    if (!is.null(varargs$verbose) && varargs$verbose) {
+      message(date(), " Starting embedding # ", i, " of ", nrep)
+    }
+    res <- do.call(tsne, varargs)
+    final_cost <- res$itercosts[length(res$itercosts)]
+
+    if (final_cost < best_cost) {
+      best_cost <- final_cost
+      best_res <- res
+    }
+    names(final_cost) <- NULL
+    all_costs <- c(all_costs, final_cost)
+  }
+
+  if (!methods::is(ret_extra, "character") && !ret_extra) {
+    best_res <- best_res$Y
+  }
+  else {
+    best_res$all_costs <- all_costs
+  }
+  best_res
+}
+
 # Helper function for epoch callback, allowing user to supply callbacks with
 # multiple arities.
 do_callback <- function(cb, Y, iter, cost = NULL) {
