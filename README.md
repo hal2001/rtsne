@@ -49,8 +49,7 @@ tsne_iris_spca <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, init =
 tsne_iris_scale <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, scale = TRUE, init = "spca")
 
 # whitening
-tsne_iris_whiten <- tsne(iris, perplexity = 25, epoch_callback = iris_plot,
-                         whiten = TRUE)
+tsne_iris_whiten <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, whiten = TRUE)
 
 # dataset-dependent exaggeration suggested by Linderman and Steinerberger
 tsne_iris_ls <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, exaggeration_factor = "ls")
@@ -62,6 +61,9 @@ tsne_iris_extra <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, ret_e
 # have to ask for them specifically
 tsne_iris_extra_extra <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, 
                               ret_extra = c("P", "Q", "DX", "DY", "X"))
+                          
+# Repeat embedding 10 times and keep the one with the best cost
+tsne_iris_best <- tsne_rep(nrep = 10, iris, perplexity = 25, epoch_callback = iris_plot, ret_extra = TRUE)
 ```
 
 ## MNIST example
