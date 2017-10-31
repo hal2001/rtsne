@@ -311,8 +311,6 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
   for (iter in 1:max_iter) {
     # D2
     Q <- dist2(Y)
-    # Q <- rowSums(Y * Y)
-    # Q <- Q + sweep(-2 * Y %*% t(Y), 2, -t(Q))
     # W
     Q <- 1 / (1 + Q)
     diag(Q) <- 0
