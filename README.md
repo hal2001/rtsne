@@ -43,10 +43,10 @@ tsne_iris <- tsne(iris, perplexity = 25, epoch_callback = iris_plot)
 tsne_iris <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, verbose = TRUE)
 
 # use (scaled) PCA initialization so embedding is repeatable
-tsne_iris_spca <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, init = "spca")
+tsne_iris_spca <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, Y_init = "spca")
 
 # scale each input column to unit variance and zero mean
-tsne_iris_scale <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, scale = TRUE, init = "spca")
+tsne_iris_scale <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, scale = TRUE, Y_init = "spca")
 
 # whitening
 tsne_iris_whiten <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, whiten = TRUE)
@@ -119,7 +119,7 @@ tsne_cb <- function(df) {
 # If you don't care about seeing the iteration number and cost, you can just use:
 mnist6k_cb <- function(Y) { embed_plot(Y, mnist6k) }
 
-mnist6k_tsne <- tsne(mnist6k_pca30, scale = "range", init = "spca", perplexity = 40, 
+mnist6k_tsne <- tsne(mnist6k_pca30, scale = "range", Y_init = "spca", perplexity = 40, 
                      exaggeration_factor = 4, stop_lying_iter = 100, eta = 100, max_iter = 1000,
                      epoch_callback = tsne_cb(mnist6k), ret_extra = TRUE, verbose = TRUE)
 ```

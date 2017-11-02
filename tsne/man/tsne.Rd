@@ -4,7 +4,7 @@
 \alias{tsne}
 \title{t-Distributed Stochastic Neighbor Embedding}
 \usage{
-tsne(X, k = 2, scale = "range", init = "rand", perplexity = 30,
+tsne(X, k = 2, scale = "range", Y_init = "rand", perplexity = 30,
   inp_kernel = "gauss", max_iter = 1000, whiten = FALSE,
   whiten_dims = 30, epoch_callback = NULL,
   epoch = base::round(max_iter/10), min_cost = 0, momentum = 0.5,
@@ -25,7 +25,7 @@ columns are mean centered and then the elements divided by absolute maximum
 value; \code{"scale"} does the same as using \code{TRUE}. To use the input
 data as-is, use \code{FALSE}, \code{NULL} or \code{"none"}.}
 
-\item{init}{How to initialize the output coordinates. One of: \code{"rand"},
+\item{Y_init}{How to initialize the output coordinates. One of: \code{"rand"},
 which initializes from a Gaussian distribution with mean 0 and standard
 deviation 1e-4; \code{"pca"}, which uses the first \code{k} scores of the
 PCA: columns are centered, but no scaling beyond that which is applied by
@@ -71,9 +71,9 @@ stop early.}
 
 \item{min_gain}{Minimum gradient descent step size.}
 
-\item{exaggeration_factor}{Numerical value to multiply input probabilities by, during
-the early exaggeration phase. Not used if \code{initial_config} is not
-\code{NULL}. May also provide the string \code{"ls"}, in which case the
+\item{exaggeration_factor}{Numerical value to multiply input probabilities
+by, during the early exaggeration phase. Not used if \code{Y_init} is a
+matrix. May also provide the string \code{"ls"}, in which case the
 dataset-dependent exaggeration technique suggested by Linderman and
 Steinerberger (2017) is used.}
 
@@ -98,8 +98,8 @@ If \code{ret_extra} is \code{FALSE}, the embedded output coordinates
 \item{\code{origD}} Dimensionality of the input data.
 \item{\code{scale}} Scaling applied to input data, as specified by the
   \code{scale} parameter.
-\item{\code{init}} Initialization type of the output coordinates, as
-  specified by the \code{init} parameter, or if a matrix was used, this will
+\item{\code{Y_init}} Initialization type of the output coordinates, as
+  specified by the \code{Y_init} parameter, or if a matrix was used, this will
   contain the string \code{"matrix"}.
 \item{\code{iter}} Number of iterations the optimization carried out.
 \item{\code{time_secs}} Time taken for the embedding, in seconds.
@@ -156,14 +156,14 @@ tsne_iris_ls <- tsne(iris, epoch_callback = ecb, perplexity = 50,
                      exaggeration_factor = "ls")
 # Make embedding deterministic by initializing with scaled PCA scores
 tsne_iris_spca <- tsne(iris, epoch_callback = ecb, perplexity = 50,
-                       exaggeration_factor = "ls", scale = "spca")
+                       exaggeration_factor = "ls", Y_init = "spca")
 # Return extra details about the embedding
 tsne_iris_extra <- tsne(iris, epoch_callback = ecb, perplexity = 50,
-                        exaggeration_factor = "ls", scale = "spca", ret_extra = TRUE)
+                        exaggeration_factor = "ls", Y_init = "spca", ret_extra = TRUE)
 
 # Return even more details (which can be slow to calculate or take up a lot of memory)
 tsne_iris_xextra <- tsne(iris, epoch_callback = ecb, perplexity = 50,
-                        exaggeration_factor = "ls", scale = "spca",
+                        exaggeration_factor = "ls", Y_init = "spca",
                         ret_extra = c("P", "Q", "X", "DX", "DY"))
 }
 }

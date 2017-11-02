@@ -22,8 +22,8 @@ Run t-SNE multiple times from a random initialization, and return the
 embedding with the lowest cost.
 }
 \details{
-This function ignores any value of \code{init} you set, and uses
-\code{init = "rand"}.
+This function ignores any value of \code{Y_init} you set, and uses
+\code{Y_init = "rand"}.
 }
 \examples{
 \dontrun{

@@ -11,7 +11,7 @@
 #'   columns are mean centered and then the elements divided by absolute maximum
 #'   value; \code{"scale"} does the same as using \code{TRUE}. To use the input
 #'   data as-is, use \code{FALSE}, \code{NULL} or \code{"none"}.
-#' @param init How to initialize the output coordinates. One of: \code{"rand"},
+#' @param Y_init How to initialize the output coordinates. One of: \code{"rand"},
 #'   which initializes from a Gaussian distribution with mean 0 and standard
 #'   deviation 1e-4; \code{"pca"}, which uses the first \code{k} scores of the
 #'   PCA: columns are centered, but no scaling beyond that which is applied by
@@ -43,9 +43,9 @@
 #'   \code{momentum} to \code{final_momentum}.
 #' @param eta Learning rate value.
 #' @param min_gain Minimum gradient descent step size.
-#' @param exaggeration_factor Numerical value to multiply input probabilities by, during
-#'   the early exaggeration phase. Not used if \code{initial_config} is not
-#'   \code{NULL}. May also provide the string \code{"ls"}, in which case the
+#' @param exaggeration_factor Numerical value to multiply input probabilities
+#'   by, during the early exaggeration phase. Not used if \code{Y_init} is a
+#'   matrix. May also provide the string \code{"ls"}, in which case the
 #'   dataset-dependent exaggeration technique suggested by Linderman and
 #'   Steinerberger (2017) is used.
 #' @param stop_lying_iter Iteration at which early exaggeration is turned
@@ -65,8 +65,8 @@
 #' \item{\code{origD}} Dimensionality of the input data.
 #' \item{\code{scale}} Scaling applied to input data, as specified by the
 #'   \code{scale} parameter.
-#' \item{\code{init}} Initialization type of the output coordinates, as
-#'   specified by the \code{init} parameter, or if a matrix was used, this will
+#' \item{\code{Y_init}} Initialization type of the output coordinates, as
+#'   specified by the \code{Y_init} parameter, or if a matrix was used, this will
 #'   contain the string \code{"matrix"}.
 #' \item{\code{iter}} Number of iterations the optimization carried out.
 #' \item{\code{time_secs}} Time taken for the embedding, in seconds.
@@ -120,14 +120,14 @@
 #'                      exaggeration_factor = "ls")
 #' # Make embedding deterministic by initializing with scaled PCA scores
 #' tsne_iris_spca <- tsne(iris, epoch_callback = ecb, perplexity = 50,
-#'                        exaggeration_factor = "ls", scale = "spca")
+#'                        exaggeration_factor = "ls", Y_init = "spca")
 #' # Return extra details about the embedding
 #' tsne_iris_extra <- tsne(iris, epoch_callback = ecb, perplexity = 50,
-#'                         exaggeration_factor = "ls", scale = "spca", ret_extra = TRUE)
+#'                         exaggeration_factor = "ls", Y_init = "spca", ret_extra = TRUE)
 #'
 #' # Return even more details (which can be slow to calculate or take up a lot of memory)
 #' tsne_iris_xextra <- tsne(iris, epoch_callback = ecb, perplexity = 50,
-#'                         exaggeration_factor = "ls", scale = "spca",
+#'                         exaggeration_factor = "ls", Y_init = "spca",
 #'                         ret_extra = c("P", "Q", "X", "DX", "DY"))
 #' }
 #' @references
@@ -141,7 +141,7 @@
 #' \emph{arXiv preprint} \emph{arXiv}:1706.02582.
 #' \url{https://arxiv.org/abs/1706.02582}
 #' @export
-tsne <- function(X, k = 2, scale = "range", init = "rand",
+tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
                  perplexity = 30, inp_kernel = "gauss", max_iter = 1000,
                  whiten = FALSE, whiten_dims = 30,
                  epoch_callback = NULL, epoch = base::round(max_iter / 10),
@@ -233,18 +233,18 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
     n <- nrow(X)
   }
 
-  if (!is.null(init)) {
-    if (methods::is(init, "matrix")) {
-      if (nrow(init) != n || ncol(init) != k) {
-        stop("init matrix does not match necessary configuration for X")
+  if (!is.null(Y_init)) {
+    if (methods::is(Y_init, "matrix")) {
+      if (nrow(Y_init) != n || ncol(Y_init) != k) {
+        stop("Y_init matrix does not match necessary configuration for X")
       }
-      Y <- init
-      init <- "matrix"
+      Y <- Y_init
+      Y_init <- "matrix"
       exaggeration_factor <- 1
     }
     else {
-      init <- match.arg(tolower(init), c("rand", "pca", "spca"))
-      Y <- switch(init,
+      Y_init <- match.arg(tolower(Y_init), c("rand", "pca", "spca"))
+      Y <- switch(Y_init,
         pca = {
           if (verbose) {
             message(date(), " Initializing from PCA scores")
@@ -284,7 +284,7 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
   }
 
   if (max_iter < 1) {
-    return(ret_value(Y, ret_extra, X, scale, init, iter = 0,
+    return(ret_value(Y, ret_extra, X, scale, Y_init, iter = 0,
                      start_time = start_time, optionals = ret_optionals))
   }
 
@@ -352,7 +352,7 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
       }
     }
 
-    if (iter == stop_lying_iter && init != "matrix") {
+    if (iter == stop_lying_iter && Y_init != "matrix") {
       if (verbose) {
         message("Switching off exaggeration at iter ", iter)
       }
@@ -373,7 +373,7 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
     }
   }
 
-  ret_value(Y, ret_extra, X, scale, init, iter, start_time,
+  ret_value(Y, ret_extra, X, scale, Y_init, iter, start_time,
             P, Q, eps, perplexity, itercosts,
             stop_lying_iter, mom_switch_iter, momentum, final_momentum, eta,
             exaggeration_factor, optionals = ret_optionals)
@@ -384,8 +384,8 @@ tsne <- function(X, k = 2, scale = "range", init = "rand",
 #' Run t-SNE multiple times from a random initialization, and return the
 #' embedding with the lowest cost.
 #'
-#' This function ignores any value of \code{init} you set, and uses
-#' \code{init = "rand"}.
+#' This function ignores any value of \code{Y_init} you set, and uses
+#' \code{Y_init = "rand"}.
 #'
 #' @param nrep Number of repeats.
 #' @param ... Arguments to apply to each \code{\link{tsne}} run.
@@ -418,7 +418,7 @@ tsne_rep <- function(nrep = 10, ...) {
     varargs$ret_extra <- TRUE
   }
 
-  varargs$init <- "rand"
+  varargs$Y_init <- "rand"
   for (i in 1:nrep) {
     if (!is.null(varargs$verbose) && varargs$verbose) {
       message(date(), " Starting embedding # ", i, " of ", nrep)
@@ -482,7 +482,7 @@ do_epoch <- function(Y, P, Q, iter, eps = .Machine$double.eps,
 # If ret_extra is TRUE and iter > 0, then all the NULL-default parameters are
 # expected to be present. If iter == 0 then the return list will contain only
 # scaling and initialization information.
-ret_value <- function(Y, ret_extra, X, scale, init, iter, start_time = NULL,
+ret_value <- function(Y, ret_extra, X, scale, Y_init, iter, start_time = NULL,
                       P = NULL, Q = NULL,
                       eps = NULL, perplexity = NULL, itercosts = NULL,
                       stop_lying_iter = NULL, mom_switch_iter = NULL,
@@ -505,7 +505,7 @@ ret_value <- function(Y, ret_extra, X, scale, init, iter, start_time = NULL,
       N = N,
       origD = origD,
       scale = scale,
-      init = init,
+      Y_init = Y_init,
       iter = iter,
       time_secs = as.numeric(end_time - start_time, units = "secs")
     )
