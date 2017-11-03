@@ -6,11 +6,10 @@
 \usage{
 tsne(X, k = 2, scale = "range", Y_init = "rand", perplexity = 30,
   inp_kernel = "gauss", max_iter = 1000, pca = FALSE, initial_dims = 50,
-  whiten = FALSE, whiten_dims = 30, epoch_callback = NULL,
-  epoch = base::round(max_iter/10), min_cost = 0, momentum = 0.5,
-  final_momentum = 0.8, mom_switch_iter = 250, eta = 500,
-  min_gain = 0.01, exaggeration_factor = 4, stop_lying_iter = 100,
-  ret_extra = FALSE, verbose = FALSE)
+  epoch_callback = NULL, epoch = base::round(max_iter/10), min_cost = 0,
+  momentum = 0.5, final_momentum = 0.8, mom_switch_iter = 250,
+  eta = 500, min_gain = 0.01, exaggeration_factor = 4,
+  stop_lying_iter = 100, ret_extra = FALSE, verbose = FALSE)
 }
 \arguments{
 \item{X}{Input coordinates or distance matrix.}
@@ -47,16 +46,14 @@ rtsne implementation (and it probably doesn't matter very much).}
 \item{pca}{If \code{TRUE}, apply PCA to reduce the dimensionality of
 \code{X} before any perplexity calibration, but after apply any scaling
 and filtering. The number of principal components to keep is specified by
-\code{initial_dims}.}
+\code{initial_dims}. You may alternatively set this value to
+\code{"whiten"}, in which case \code{X} is also whitened, i.e. the
+principal components are scaled by the inverse of the square root of the
+equivalent eigenvalues, so that the variance of component is 1.}
 
-\item{initial_dims, }{if \code{pca = TRUE}, the number of principal components
-to keep.}
-
-\item{whiten}{If \code{TRUE}, whitens the input data before calculating the
-input probabilities.}
-
-\item{whiten_dims}{Number of dimensions to use if the data is preprocessed by
-whitening. Must not be greater than the number of columns in \code{X}.}
+\item{initial_dims}{If carrying out PCA or whitening, the number of
+principal components to keep. Must be no greater than the rank of the input
+or no PCA or whitening will be carried out.}
 
 \item{epoch_callback}{Function to call after each epoch. Should have the
 signature \code{epoch_callback(Y)} where \code{Y} is the output coordinate
@@ -134,9 +131,9 @@ If \code{ret_extra} is \code{FALSE}, the embedded output coordinates
 \item{\code{pca_dims}} If PCA was carried out to reduce the initial
   dimensionality of the input, the number of components retained, as
   specified by the \code{initial_dims} parameter.
-\item{\code{whiten_dims}} If whitening was carried out to reduce the initial
+\item{\code{whiten_dims}} If PCA whitening was carried out to reduce the
   dimensionality of the input, the number of components retained, as
-  specified by the \code{whiten_dims} parameter.
+  specified by the \code{initial_dims} parameter.
 }
 Additionally, if you set \code{ret_extra} to a vector of names, these will
 be returned in addition to the values given above. These values are optional
@@ -179,6 +176,15 @@ tsne_iris_extra <- tsne(iris, epoch_callback = ecb, perplexity = 50,
 tsne_iris_xextra <- tsne(iris, epoch_callback = ecb, perplexity = 50,
                         exaggeration_factor = "ls", Y_init = "spca",
                         ret_extra = c("P", "Q", "X", "DX", "DY"))
+
+# Reduce initial dimensionality to 3 via PCA
+# (But you would normally do this with a much larger dataset)
+tsne_iris_pca <- tsne(iris, epoch_callback = ecb, perplexity = 50,
+                      pca = TRUE, initial_dims = 3)
+
+# Or use PCA whitening, so all columns of X have variance = 1
+tsne_iris_whiten <- tsne(iris, epoch_callback = ecb, perplexity = 50,
+                         pca = "whiten", initial_dims = 3)
 }
 }
 \references{

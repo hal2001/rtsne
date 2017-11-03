@@ -105,49 +105,40 @@
   list(P = P, beta = beta)
 }
 
-# Whitens the input matrix X using n.comp components.
-# Returns the whitened matrix.
-.whiten <- function(X, row.norm = FALSE, verbose = FALSE, n.comp = ncol(X)) {
-  n.comp  # forces an eval/save of n.comp
-  if (verbose) {
-    message("Centering")
-  }
-  n <- nrow(X)
-  p <- ncol(X)
-  X <- scale(X, scale = FALSE)
-  if (row.norm) {
-    X <- t(scale(X, scale = row.norm))
-  } else {
-    X <- t(X)
-  }
-
-  if (verbose) {
-    message("Whitening")
-  }
-  V <- X %*% t(X) / n
-  s <- La.svd(V)
-  D <- diag(c(1 / sqrt(s$d)))
-  K <- D %*% t(s$u)
-  K <- matrix(K[1:n.comp, ], n.comp, p)
-  X <- t(K %*% X)
-  X
-}
-
 # Calculates a matrix containing the first ncol columns of the PCA scores.
-# Returns the score matrix.
-.scores_matrix <- function(X, ncol = min(nrow(X), base::ncol(X)),
-                           verbose = FALSE) {
+# Returns the score matrix unless ret_extra is TRUE, in which case a list
+# is returned also containing the eigenvalues
+.scores_matrix <- function(X, ncol = min(dim(X)),
+                           verbose = FALSE, ret_extra = FALSE) {
   X <- scale(X, center = TRUE, scale = FALSE)
   # do SVD on X directly rather than forming covariance matrix
   ncomp <- ncol
   s <- svd(X, nu = ncomp, nv = 0)
   D <- diag(c(s$d[1:ncomp]))
-  if (verbose) {
+  if (verbose || ret_extra) {
     # calculate eigenvalues of covariance matrix from singular values
     lambda <- (s$d ^ 2) / (nrow(X) - 1)
     varex <- sum(lambda[1:ncomp]) / sum(lambda)
     message("PCA: ", ncomp, " components explained ", formatC(varex * 100),
             "% variance")
   }
-  s$u %*% D
+  scores <- s$u %*% D
+  if (ret_extra) {
+    list(
+      scores = scores,
+      lambda = lambda[1:ncomp]
+    )
+  }
+  else {
+    scores
+  }
 }
+
+# Whiten the data by PCA. This both reduces the dimensionality, but also
+# scales the scores by the inverse square root of the equivalent eigenvalue
+# so that the variance of each column is 1.
+.whiten_pca <- function(X, ncol = min(dim(X)), eps = 1e-5, verbose = FALSE) {
+  pca <- .scores_matrix(X, ncol = ncol, verbose = verbose, ret_extra = TRUE)
+  sweep(pca$scores, 2, sqrt(pca$lambda + eps), "/")
+}
+

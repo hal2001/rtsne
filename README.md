@@ -58,7 +58,13 @@ tsne_iris_extra <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, ret_e
 # have to ask for them specifically
 tsne_iris_extra_extra <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, 
                               ret_extra = c("P", "Q", "DX", "DY", "X"))
-                          
+
+# Use PCA to reduce initial dimensionality to 3 (but for a better example, see MNIST section below)
+tsne_iris_pca <- tsne(iris, perplexity = 25, pca = TRUE, initial_dims = 3)
+
+# Or use whitening to make each primcipal component also have equal variance
+tsne_iris_whiten <- tsne(iris, perplexity = 25, pca = "whiten", initial_dims = 3)
+
 # Repeat embedding 10 times and keep the one with the best cost
 tsne_iris_best <- tsne_rep(nrep = 10, iris, perplexity = 25, epoch_callback = iris_plot, ret_extra = TRUE)
 ```

@@ -29,13 +29,13 @@
 #' @param pca If \code{TRUE}, apply PCA to reduce the dimensionality of
 #'   \code{X} before any perplexity calibration, but after apply any scaling
 #'   and filtering. The number of principal components to keep is specified by
-#'   \code{initial_dims}.
-#' @param initial_dims, if \code{pca = TRUE}, the number of principal components
-#'   to keep.
-#' @param whiten If \code{TRUE}, whitens the input data before calculating the
-#'   input probabilities.
-#' @param whiten_dims Number of dimensions to use if the data is preprocessed by
-#'   whitening. Must not be greater than the number of columns in \code{X}.
+#'   \code{initial_dims}. You may alternatively set this value to
+#'   \code{"whiten"}, in which case \code{X} is also whitened, i.e. the
+#'   principal components are scaled by the inverse of the square root of the
+#'   equivalent eigenvalues, so that the variance of component is 1.
+#' @param initial_dims If carrying out PCA or whitening, the number of
+#'   principal components to keep. Must be no greater than the rank of the input
+#'   or no PCA or whitening will be carried out.
 #' @param min_cost If the cost falls below this value, the optimization will
 #'   stop early.
 #' @param epoch_callback Function to call after each epoch. Should have the
@@ -99,9 +99,9 @@
 #' \item{\code{pca_dims}} If PCA was carried out to reduce the initial
 #'   dimensionality of the input, the number of components retained, as
 #'   specified by the \code{initial_dims} parameter.
-#' \item{\code{whiten_dims}} If whitening was carried out to reduce the initial
+#' \item{\code{whiten_dims}} If PCA whitening was carried out to reduce the
 #'   dimensionality of the input, the number of components retained, as
-#'   specified by the \code{whiten_dims} parameter.
+#'   specified by the \code{initial_dims} parameter.
 #' }
 #' Additionally, if you set \code{ret_extra} to a vector of names, these will
 #' be returned in addition to the values given above. These values are optional
@@ -141,6 +141,15 @@
 #' tsne_iris_xextra <- tsne(iris, epoch_callback = ecb, perplexity = 50,
 #'                         exaggeration_factor = "ls", Y_init = "spca",
 #'                         ret_extra = c("P", "Q", "X", "DX", "DY"))
+#'
+#' # Reduce initial dimensionality to 3 via PCA
+#' # (But you would normally do this with a much larger dataset)
+#' tsne_iris_pca <- tsne(iris, epoch_callback = ecb, perplexity = 50,
+#'                       pca = TRUE, initial_dims = 3)
+#'
+#' # Or use PCA whitening, so all columns of X have variance = 1
+#' tsne_iris_whiten <- tsne(iris, epoch_callback = ecb, perplexity = 50,
+#'                          pca = "whiten", initial_dims = 3)
 #' }
 #' @references
 #' Van der Maaten, L., & Hinton, G. (2008).
@@ -156,7 +165,6 @@
 tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
                  perplexity = 30, inp_kernel = "gauss", max_iter = 1000,
                  pca = FALSE, initial_dims = 50,
-                 whiten = FALSE, whiten_dims = 30,
                  epoch_callback = NULL, epoch = base::round(max_iter / 10),
                  min_cost = 0,
                  momentum = 0.5, final_momentum = 0.8, mom_switch_iter = 250,
@@ -165,6 +173,13 @@ tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
                  ret_extra = FALSE,
                  verbose = FALSE) {
 
+  if (class(pca) == "character" && pca == "whiten") {
+    pca <- TRUE
+    whiten <- TRUE
+  }
+  else {
+    whiten <- FALSE
+  }
   if (pca && initial_dims < k) {
     stop("Initial PCA dimensionality must be larger than desired output ",
          "dimension")
@@ -246,20 +261,22 @@ tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
       pca <- min(nrow(X), ncol(X)) >= initial_dims
     }
     if (pca) {
-      if (verbose) {
-        message(date(), " Reducing initial dimensionality with PCA to ",
-                initial_dims, " dims")
+      if (whiten) {
+        if (verbose) {
+          message(date(), " Reducing initial dimensionality with PCA and ",
+                  "whitening to ", initial_dims, " dims")
+        }
+        X <- .whiten_pca(X = X, ncol = initial_dims, verbose = verbose)
       }
-      X <- .scores_matrix(X = X, ncol = initial_dims, verbose = verbose)
+      else {
+        if (verbose) {
+          message(date(), " Reducing initial dimensionality with PCA to ",
+                  initial_dims, " dims")
+        }
+        X <- .scores_matrix(X = X, ncol = initial_dims, verbose = verbose)
+      }
     }
 
-    whiten_dims <- min(whiten_dims, ncol(X))
-    if (whiten) {
-      if (verbose) {
-        message(date(), " Whitening")
-      }
-      X <- .whiten(as.matrix(X), n.comp = whiten_dims)
-    }
     n <- nrow(X)
   }
 
@@ -326,8 +343,8 @@ tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
   if (max_iter < 1) {
     return(ret_value(Y, ret_extra, X, scale, Y_init, iter = 0,
                      start_time = start_time, optionals = ret_optionals,
-                     pca = ifelse(pca, initial_dims, 0),
-                     whiten = ifelse(whiten, whiten_dims, 0)))
+                     pca = ifelse(pca && !whiten, initial_dims, 0),
+                     whiten = ifelse(pca && whiten, initial_dims, 0)))
   }
 
   eps <- .Machine$double.eps # machine precision
@@ -419,8 +436,8 @@ tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
             P, Q, eps, perplexity, itercosts,
             stop_lying_iter, mom_switch_iter, momentum, final_momentum, eta,
             exaggeration_factor, optionals = ret_optionals,
-            pca = ifelse(pca, initial_dims, 0),
-            whiten = ifelse(whiten, whiten_dims, 0))
+            pca = ifelse(pca && !whiten, initial_dims, 0),
+            whiten = ifelse(pca && whiten, initial_dims, 0))
 }
 
 #' Best t-SNE Result From Multiple Initializations
@@ -558,7 +575,7 @@ ret_value <- function(Y, ret_extra, X, scale, Y_init, iter, start_time = NULL,
     if (pca > 0) {
       res$pca_dims <- pca
     }
-    if (whiten > 0) {
+    else if (whiten > 0) {
       res$whiten_dims <- whiten
     }
 
