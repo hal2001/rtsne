@@ -5,8 +5,8 @@
 \title{t-Distributed Stochastic Neighbor Embedding}
 \usage{
 tsne(X, k = 2, scale = "range", Y_init = "rand", perplexity = 30,
-  inp_kernel = "gauss", max_iter = 1000, whiten = FALSE,
-  whiten_dims = 30, epoch_callback = NULL,
+  inp_kernel = "gauss", max_iter = 1000, pca = FALSE, initial_dims = 50,
+  whiten = FALSE, whiten_dims = 30, epoch_callback = NULL,
   epoch = base::round(max_iter/10), min_cost = 0, momentum = 0.5,
   final_momentum = 0.8, mom_switch_iter = 250, eta = 500,
   min_gain = 0.01, exaggeration_factor = 4, stop_lying_iter = 100,
@@ -43,6 +43,14 @@ probabilities.}
 rtsne implementation (and it probably doesn't matter very much).}
 
 \item{max_iter}{Maximum number of iterations in the optimization.}
+
+\item{pca}{If \code{TRUE}, apply PCA to reduce the dimensionality of
+\code{X} before any perplexity calibration, but after apply any scaling
+and filtering. The number of principal components to keep is specified by
+\code{initial_dims}.}
+
+\item{initial_dims, }{if \code{pca = TRUE}, the number of principal components
+to keep.}
 
 \item{whiten}{If \code{TRUE}, whitens the input data before calculating the
 input probabilities.}
@@ -123,6 +131,12 @@ If \code{ret_extra} is \code{FALSE}, the embedded output coordinates
 \item{\code{exaggeration_factor}} Multiplier of the input probabilities
   during the exaggeration phase. If the Linderman-Steinerberger exaggeration
   scheme is used, this value will have the name \code{"ls"}.
+\item{\code{pca_dims}} If PCA was carried out to reduce the initial
+  dimensionality of the input, the number of components retained, as
+  specified by the \code{initial_dims} parameter.
+\item{\code{whiten_dims}} If whitening was carried out to reduce the initial
+  dimensionality of the input, the number of components retained, as
+  specified by the \code{whiten_dims} parameter.
 }
 Additionally, if you set \code{ret_extra} to a vector of names, these will
 be returned in addition to the values given above. These values are optional

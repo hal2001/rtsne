@@ -48,9 +48,6 @@ tsne_iris_spca <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, Y_init
 # scale each input column to unit variance and zero mean
 tsne_iris_scale <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, scale = TRUE, Y_init = "spca")
 
-# whitening
-tsne_iris_whiten <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, whiten = TRUE)
-
 # dataset-dependent exaggeration suggested by Linderman and Steinerberger
 tsne_iris_ls <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, exaggeration_factor = "ls")
 
@@ -75,7 +72,8 @@ sampling 6,000 digits from the [MNIST database of handwritten digits](http://yan
 The parameters for the embedding are those given in the paper. For the PCA
 preprocessing carried out to reduce the input data to 30 dimensions, no 
 scaling of the columns is carried out (each column *is* centered, however);
-it's not mentioned in the paper if any scaling is done as part of the PCA.
+it's not mentioned in the paper if any scaling is done as part of the PCA (it
+probably isn't if the default arguments in Rtsne is anything to go by).
 
 Also, no specific scaling of the data is mentioned in the paper as part of the
 input processing, before the perplexity calibration is carried out. The example
@@ -100,9 +98,6 @@ library("dplyr")
 library("magrittr")
 mnist6k <- sample_n(mnist %>% group_by(Label), 600)
 
-# Reduce input dimensionality from 784 to 30 via PCA
-mnist6k_pca30 <- prcomp(mnist6k[, -785], retx = TRUE, rank. = 30)$x
-
 # Use vizier package for visualization
 devtools::install_github("jlmelville/vizier")
 library(vizier)
@@ -119,9 +114,11 @@ tsne_cb <- function(df) {
 # If you don't care about seeing the iteration number and cost, you can just use:
 mnist6k_cb <- function(Y) { embed_plot(Y, mnist6k) }
 
-mnist6k_tsne <- tsne(mnist6k_pca30, scale = "range", Y_init = "spca", perplexity = 40, 
-                     exaggeration_factor = 4, stop_lying_iter = 100, eta = 100, max_iter = 1000,
-                     epoch_callback = tsne_cb(mnist6k), ret_extra = TRUE, verbose = TRUE)
+# NB: Unlike Rtsne, you have to explicitly ask for PCA dimensionality reduction
+mnist6k_tsne <- tsne(mnist6k, scale = "range", Y_init = "spca", perplexity = 40, 
+                     pca = TRUE, initial_dims = 30, exaggeration_factor = 4, stop_lying_iter = 100, 
+                     eta = 100, max_iter = 1000, epoch_callback = tsne_cb(mnist6k), ret_extra = TRUE, 
+                     verbose = TRUE)
 ```
 
 ![Animated GIF of 6000 digits from MNIST optimized by t-SNE](img/mnist6k.gif)

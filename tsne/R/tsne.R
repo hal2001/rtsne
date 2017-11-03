@@ -26,6 +26,12 @@
 #'   \code{"exp"} is not the usual literature function, but matches the original
 #'   rtsne implementation (and it probably doesn't matter very much).
 #' @param max_iter Maximum number of iterations in the optimization.
+#' @param pca If \code{TRUE}, apply PCA to reduce the dimensionality of
+#'   \code{X} before any perplexity calibration, but after apply any scaling
+#'   and filtering. The number of principal components to keep is specified by
+#'   \code{initial_dims}.
+#' @param initial_dims, if \code{pca = TRUE}, the number of principal components
+#'   to keep.
 #' @param whiten If \code{TRUE}, whitens the input data before calculating the
 #'   input probabilities.
 #' @param whiten_dims Number of dimensions to use if the data is preprocessed by
@@ -90,6 +96,12 @@
 #' \item{\code{exaggeration_factor}} Multiplier of the input probabilities
 #'   during the exaggeration phase. If the Linderman-Steinerberger exaggeration
 #'   scheme is used, this value will have the name \code{"ls"}.
+#' \item{\code{pca_dims}} If PCA was carried out to reduce the initial
+#'   dimensionality of the input, the number of components retained, as
+#'   specified by the \code{initial_dims} parameter.
+#' \item{\code{whiten_dims}} If whitening was carried out to reduce the initial
+#'   dimensionality of the input, the number of components retained, as
+#'   specified by the \code{whiten_dims} parameter.
 #' }
 #' Additionally, if you set \code{ret_extra} to a vector of names, these will
 #' be returned in addition to the values given above. These values are optional
@@ -143,6 +155,7 @@
 #' @export
 tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
                  perplexity = 30, inp_kernel = "gauss", max_iter = 1000,
+                 pca = FALSE, initial_dims = 50,
                  whiten = FALSE, whiten_dims = 30,
                  epoch_callback = NULL, epoch = base::round(max_iter / 10),
                  min_cost = 0,
@@ -151,6 +164,11 @@ tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
                  exaggeration_factor = 4, stop_lying_iter = 100,
                  ret_extra = FALSE,
                  verbose = FALSE) {
+
+  if (pca && initial_dims < k) {
+    stop("Initial PCA dimensionality must be larger than desired output ",
+         "dimension")
+  }
 
   start_time <- NULL
   ret_optionals <- c()
@@ -222,6 +240,18 @@ tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
       }
     )
 
+    # We won't do PCA if the rank of the input is less than the requested
+    # initial dimensionality
+    if (pca) {
+      pca <- min(nrow(X), ncol(X)) >= initial_dims
+    }
+    if (pca) {
+      if (verbose) {
+        message(date(), " Reducing initial dimensionality with PCA to ",
+                initial_dims, " dims")
+      }
+      X <- .scores_matrix(X = X, ncol = initial_dims, verbose = verbose)
+    }
 
     whiten_dims <- min(whiten_dims, ncol(X))
     if (whiten) {
@@ -249,13 +279,24 @@ tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
           if (verbose) {
             message(date(), " Initializing from PCA scores")
           }
-          .scores_matrix(X, ncol = k, verbose = verbose)
+          if (pca) {
+            X[, 1:2]
+          }
+          else {
+            .scores_matrix(X, ncol = k, verbose = verbose)
+          }
         },
         spca = {
           if (verbose) {
             message(date(), " Initializing from scaled PCA scores")
           }
-          scores <- .scores_matrix(X, ncol = k, verbose = verbose)
+          # If we've already done PCA, we can just take the first two columns
+          if (pca) {
+            scores <- X[, 1:2]
+          }
+          else {
+            scores <- .scores_matrix(X, ncol = k, verbose = verbose)
+          }
           scale(scores, scale = apply(scores, 2, stats::sd) / 1e-4)
         },
         rand = {
@@ -267,7 +308,6 @@ tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
       )
     }
   }
-
   # Display initialization
   if (!is.null(epoch_callback)) {
     do_callback(epoch_callback, Y, 0)
@@ -285,7 +325,9 @@ tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
 
   if (max_iter < 1) {
     return(ret_value(Y, ret_extra, X, scale, Y_init, iter = 0,
-                     start_time = start_time, optionals = ret_optionals))
+                     start_time = start_time, optionals = ret_optionals,
+                     pca = ifelse(pca, initial_dims, 0),
+                     whiten = ifelse(whiten, whiten_dims, 0)))
   }
 
   eps <- .Machine$double.eps # machine precision
@@ -376,7 +418,9 @@ tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
   ret_value(Y, ret_extra, X, scale, Y_init, iter, start_time,
             P, Q, eps, perplexity, itercosts,
             stop_lying_iter, mom_switch_iter, momentum, final_momentum, eta,
-            exaggeration_factor, optionals = ret_optionals)
+            exaggeration_factor, optionals = ret_optionals,
+            pca = ifelse(pca, initial_dims, 0),
+            whiten = ifelse(whiten, whiten_dims, 0))
 }
 
 #' Best t-SNE Result From Multiple Initializations
@@ -484,7 +528,8 @@ do_epoch <- function(Y, P, Q, iter, eps = .Machine$double.eps,
 # scaling and initialization information.
 ret_value <- function(Y, ret_extra, X, scale, Y_init, iter, start_time = NULL,
                       P = NULL, Q = NULL,
-                      eps = NULL, perplexity = NULL, itercosts = NULL,
+                      eps = NULL, perplexity = NULL, pca = 0, whiten = 0,
+                      itercosts = NULL,
                       stop_lying_iter = NULL, mom_switch_iter = NULL,
                       momentum = NULL, final_momentum = NULL, eta = NULL,
                       exaggeration_factor = NULL, optionals = c()) {
@@ -509,6 +554,13 @@ ret_value <- function(Y, ret_extra, X, scale, Y_init, iter, start_time = NULL,
       iter = iter,
       time_secs = as.numeric(end_time - start_time, units = "secs")
     )
+
+    if (pca > 0) {
+      res$pca_dims <- pca
+    }
+    if (whiten > 0) {
+      res$whiten_dims <- whiten
+    }
 
     if (iter > 0) {
       # this was already calculated in the final epoch, but unlikely to be
