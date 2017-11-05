@@ -19,10 +19,10 @@ tsne(X, k = 2, scale = "range", Y_init = "rand", perplexity = 30,
 \item{scale}{If \code{TRUE}, scale each column to zero mean and unit
 variance. Alternatively, you may specify one of the following strings:
 \code{"range"}, which range scales the matrix elements between 0 and 1;
-\code{"bh"}, which applies the same scaling in Barnes-Hut t-SNE, where the
-columns are mean centered and then the elements divided by absolute maximum
-value; \code{"scale"} does the same as using \code{TRUE}. To use the input
-data as-is, use \code{FALSE}, \code{NULL} or \code{"none"}.}
+\code{"absmax"}, here the columns are mean centered and then the elements
+divided by absolute maximum value; \code{"scale"} does the same as using
+\code{TRUE}. To use the input data as-is, use \code{FALSE}, \code{NULL}
+or \code{"none"}.}
 
 \item{Y_init}{How to initialize the output coordinates. One of: \code{"rand"},
 which initializes from a Gaussian distribution with mean 0 and standard

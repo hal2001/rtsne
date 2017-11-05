@@ -48,6 +48,9 @@ tsne_iris_spca <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, Y_init
 # scale each input column to unit variance and zero mean
 tsne_iris_scale <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, scale = TRUE, Y_init = "spca")
 
+# center each column then scale by abs max value (how BH t-SNE and largeVis normalize data)
+tsne_iris_absmax <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, scale = "absmax", Y_init = "spca")
+
 # dataset-dependent exaggeration suggested by Linderman and Steinerberger
 tsne_iris_ls <- tsne(iris, perplexity = 25, epoch_callback = iris_plot, exaggeration_factor = "ls")
 

@@ -7,10 +7,10 @@
 #' @param scale If \code{TRUE}, scale each column to zero mean and unit
 #'   variance. Alternatively, you may specify one of the following strings:
 #'   \code{"range"}, which range scales the matrix elements between 0 and 1;
-#'   \code{"bh"}, which applies the same scaling in Barnes-Hut t-SNE, where the
-#'   columns are mean centered and then the elements divided by absolute maximum
-#'   value; \code{"scale"} does the same as using \code{TRUE}. To use the input
-#'   data as-is, use \code{FALSE}, \code{NULL} or \code{"none"}.
+#'   \code{"absmax"}, here the columns are mean centered and then the elements
+#'   divided by absolute maximum value; \code{"scale"} does the same as using
+#'   \code{TRUE}. To use the input data as-is, use \code{FALSE}, \code{NULL}
+#'   or \code{"none"}.
 #' @param Y_init How to initialize the output coordinates. One of: \code{"rand"},
 #'   which initializes from a Gaussian distribution with mean 0 and standard
 #'   deviation 1e-4; \code{"pca"}, which uses the first \code{k} scores of the
@@ -222,7 +222,7 @@ tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
         scale <- "none"
       }
     }
-    scale <- match.arg(tolower(scale), c("none", "scale", "range", "bh"))
+    scale <- match.arg(tolower(scale), c("none", "scale", "range", "absmax"))
 
     switch(scale,
       range = {
@@ -233,9 +233,9 @@ tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
         X <- X - min(X)
         X <- X / max(X)
       },
-      bh = {
+      absmax = {
         if (verbose) {
-          message(date(), " Normalizing BH-style")
+          message(date(), " Normalizing by abs-max")
         }
         X <- base::scale(X, scale = FALSE)
         X <- X / abs(max(X))
