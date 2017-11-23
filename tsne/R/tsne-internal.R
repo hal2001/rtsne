@@ -57,6 +57,14 @@
         Di <- sqrt(Di)
       }
     }
+    # Initialization used for all points in ELKI according to Schubert & Gertz
+    # in "Intrinsic t-Stochastic Neighbor Embedding for Visualization and
+    # Outlier Detection: A Remedy Against the Curse of Dimensionality?"
+    # Using the last optimized beta seems to be better most of the time based
+    # on my testing though, so we'll only use it for the first point.
+    if (i == 1) {
+      beta[1] <- 0.5 * perplexity / mean(Di)
+    }
 
     hbeta <- .Hbeta(Di, beta[i])
     H <- hbeta$H
