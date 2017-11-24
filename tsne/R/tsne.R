@@ -400,8 +400,6 @@ tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
     }
 
     Y <- Y + uY
-    # Recenter Y
-    Y <- sweep(Y, 2, colMeans(Y))
 
     if (iter == mom_switch_iter) {
       mu <- final_momentum
@@ -420,6 +418,9 @@ tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
 
     if (iter %% epoch == 0 || iter == max_iter) {
       cost <- do_epoch(Y, P, Q, iter, eps, epoch_callback, verbose)
+
+      # Recenter Y during epoch only
+      Y <- sweep(Y, 2, colMeans(Y))
 
       if (ret_extra) {
         names(cost) <- iter
