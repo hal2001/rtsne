@@ -361,7 +361,6 @@ tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
   }
   P <- P * exaggeration_factor
 
-  G <- matrix(0, n, k)
   uY <- matrix(0, n, k)
   gains <- matrix(1, n, k)
   Q <- matrix(0, n, n)
@@ -382,10 +381,13 @@ tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
     # Q
     Q <- Q / sumW
     Q[Q < eps] <- eps
-    K <- 4 * (P - Q) * Q * sumW
-    for (i in 1:n) {
-      G[i, ] <- colSums(sweep(-Y, 2, -Y[i, ]) * K[, i])
-    }
+    # Force constant (aka stiffness)
+    G <- 4 * (P - Q) * Q * sumW
+    # Gradient more familiarly written as: Gi = sum_j K_ij * (y_i - y_j)
+    # Expand that out and you can express it as a series of matrix operations
+    # MUCH more efficient than updating each row in a for-loop
+    G <- Y * rowSums(G) - (G %*% Y)
+
     if (names(exaggeration_factor) == "ls" && iter <= stop_lying_iter) {
       # during LS exaggeration, use gradient descent only with eta = 1
       uY <- -G
@@ -399,6 +401,7 @@ tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
       uY <- mu * uY - eta * gains * G
     }
 
+    # Update
     Y <- Y + uY
 
     if (iter == mom_switch_iter) {

@@ -5,8 +5,11 @@ A fork of Justin Donaldson's R package for [t-SNE](https://lvdmaaten.github.io/t
 
 I just wanted to teach myself how t-SNE worked, while also learning non-trivial 
 and idiomatic R programming. I have subsequently messed about with various
-parameters, exposing different options, and also added:
+parameters, exposing different options, and also added some other features:
 
+* The gradient matrix is now calculated as a matrix operation, rather than a
+  for-loop over each row. This leads to substantial speed-ups (e.g. 40% faster
+  on the 6,000 MNIST digit example below).
 * Extra initialization option: use the first two PCA scores. Makes embedding deterministic. 
 This can be scaled so the standard deviation is 1e-4 (as in the usual random initialization).
 * Early exaggeration option: the method suggested by [Linderman and Steinerberger](https://arxiv.org/abs/1706.02582).
