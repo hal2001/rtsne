@@ -640,7 +640,10 @@ ret_value <- function(Y, ret_extra, X, scale, Y_init, iter, start_time = NULL,
 }
 
 # Create matrix of squared Euclidean distances
+# NB for low dimension, X %*% t(X) seems to a bit faster than tcrossprod(X)
 dist2 <- function(X) {
   D2 <- rowSums(X * X)
-  D2 + sweep(-2 * X %*% t(X), 2, -t(D2))
+  D2 <- D2 + sweep(X %*% t(X) * -2, 2, t(D2), `+`)
+  D2[D2 < 0] <- 0
+  D2
 }
