@@ -349,9 +349,8 @@ tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
 
   eps <- .Machine$double.eps # machine precision
 
-  P <- .x2p(X, perplexity, 1e-5, kernel = inp_kernel, verbose = verbose)$P
+  P <- .x2p(X, perplexity, tol = 1e-5, kernel = inp_kernel, verbose = verbose)$P
   P <- 0.5 * (P + t(P))
-  P[P < eps] <- eps
   P <- P / sum(P)
 
   if (names(exaggeration_factor) == "ls") {
@@ -363,26 +362,23 @@ tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
 
   uY <- matrix(0, n, k)
   gains <- matrix(1, n, k)
-  Q <- matrix(0, n, n)
   mu <- momentum
 
   for (iter in 1:max_iter) {
     # D2
-    Q <- dist2(Y)
+    W <- dist2(Y)
     # W
-    Q <- 1 / (1 + Q)
-    diag(Q) <- 0
-    if (any(is.nan(Q))) {
+    W <- 1 / (1 + W)
+    diag(W) <- 0
+    if (any(is.nan(W))) {
       message("NaN in grad. descent")
       # Give up and return the last iteration's result
       break
     }
-    sumW <- sum(Q)
-    # Q
-    Q <- Q / sumW
-    Q[Q < eps] <- eps
+    Z <- sum(W)
     # Force constant (aka stiffness)
-    G <- 4 * (P - Q) * Q * sumW
+    G <- 4 * W * (P - W / Z)
+
     # Gradient more familiarly written as: Gi = sum_j K_ij * (y_i - y_j)
     # Expand that out and you can express it as a series of matrix operations
     # MUCH more efficient than updating each row in a for-loop
@@ -420,10 +416,10 @@ tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
     }
 
     if (iter %% epoch == 0 || iter == max_iter) {
-      cost <- do_epoch(Y, P, Q, iter, eps, epoch_callback, verbose)
-
       # Recenter Y during epoch only
       Y <- sweep(Y, 2, colMeans(Y))
+
+      cost <- do_epoch(Y, P, W / Z, G, iter, eps, epoch_callback, verbose)
 
       if (ret_extra) {
         names(cost) <- iter
@@ -437,7 +433,7 @@ tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
   }
 
   ret_value(Y, ret_extra, X, scale, Y_init, iter, start_time,
-            P, Q, eps, perplexity, itercosts,
+            P, W / Z, eps, perplexity, itercosts,
             stop_lying_iter, mom_switch_iter, momentum, final_momentum, eta,
             exaggeration_factor, optionals = ret_optionals,
             pca = ifelse(pca && !whiten, initial_dims, 0),
@@ -524,13 +520,14 @@ do_callback <- function(cb, Y, iter, cost = NULL) {
 }
 
 # Carry out epoch-related jobs, e.g. cost calculation, logging, callback
-do_epoch <- function(Y, P, Q, iter, eps = .Machine$double.eps,
+do_epoch <- function(Y, P, Q, G, iter, eps = .Machine$double.eps,
                      epoch_callback = NULL, verbose = FALSE) {
   cost <- sum(P * log((P + eps) / (Q + eps)))
 
   if (verbose) {
-    message(date(), " Iteration #", iter, " error is: ",
-            formatC(cost))
+    message(date(), " Iteration #", iter, " error: ",
+            formatC(cost)
+            , " ||G||2 = ", formatC(sqrt(sum(G * G))))
   }
 
   if (!is.null(epoch_callback)) {
