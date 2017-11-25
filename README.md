@@ -135,8 +135,8 @@ mnist6k_tsne <- tsne(mnist6k, scale = "range", Y_init = "spca", perplexity = 40,
 
 ![Animated GIF of 6000 digits from MNIST optimized by t-SNE](img/mnist6k.gif)
 
-On my Sandy Bridge-era Windows laptop, this took about 80 minutes to complete 
-(the perplexity  calibration only took about 2 of those minutes) and seemed to 
+On my Sandy Bridge-era Windows laptop, this took about 50 minutes to complete 
+(the perplexity  calibration only took about 1 of those minutes) and seemed to 
 add about 2.5 GB of RAM onto my R session.
 
 ## License
