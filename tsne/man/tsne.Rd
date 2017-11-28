@@ -138,7 +138,7 @@ If \code{ret_extra} is \code{FALSE}, the embedded output coordinates
 Additionally, if you set \code{ret_extra} to a vector of names, these will
 be returned in addition to the values given above. These values are optional
 and must be explicitly asked for, because they are either expensive to
-calculate, take up a lot of memory, or both. The avaiable optional values
+calculate, take up a lot of memory, or both. The available optional values
 are:
 \itemize{
 \item{\code{X}} The input data, after filtering and scaling.
