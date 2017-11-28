@@ -461,7 +461,7 @@ tsne <- function(X, k = 2, scale = "range", Y_init = "rand",
 #' # How much do the costs vary between runs?
 #' range(tsne_iris_best$all_costs)
 #' # Display best embedding found
-#' plot(iris_best$Y)
+#' plot(tsne_iris_best$Y)
 #' }
 #' @export
 tsne_rep <- function(nrep = 10, ...) {

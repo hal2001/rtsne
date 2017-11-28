@@ -32,6 +32,6 @@ tsne_iris_best <- tsne_rep(nrep = 5, iris, perplexity = 50, ret_extra = TRUE)
 # How much do the costs vary between runs?
 range(tsne_iris_best$all_costs)
 # Display best embedding found
-plot(iris_best$Y)
+plot(tsne_iris_best$Y)
 }
 }
