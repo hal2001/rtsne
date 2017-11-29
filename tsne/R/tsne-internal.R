@@ -9,7 +9,7 @@
     H <- 0
     P <- D * 0
   } else {
-    H <- log(sumP) + beta * sum(D %*% P) / sumP
+    H <- log(sumP) + beta * sum(D * P) / sumP
     P <- P / sumP
   }
   list(H = H, P = P)
