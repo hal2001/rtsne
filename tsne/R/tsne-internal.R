@@ -94,11 +94,11 @@
       thisP <- hbeta$P
       Hdiff <- H - logU
       tries <- tries + 1
-      # initialize guess for next point with optimized beta for this point
-      # doesn't save many iterations, but why not?
-      if (i < n) {
-        beta[i + 1] <- beta[i]
-      }
+    }
+    # initialize guess for next point with optimized beta for this point
+    # doesn't save many iterations, but why not?
+    if (i < n) {
+      beta[i + 1] <- beta[i]
     }
     P[i, -i] <- thisP
     perps[i] <- exp(H)
