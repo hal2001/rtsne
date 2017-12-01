@@ -51,7 +51,7 @@
       Di <- D[i, -i]
     }
     else {
-      Di <- (XX[i] + XX - 2 * as.vector(X %*% X[i, ]))[-i]
+      Di <- (XX[i] + XX - 2 * colSums(tcrossprod(X[i, ], X)))[-i]
       Di[Di < 0] <- 0
       if (kernel == "exp") {
         Di <- sqrt(Di)
@@ -78,14 +78,15 @@
         if (is.infinite(betamax)) {
           beta[i] <- beta[i] * 2
         } else {
-          beta[i] <- (beta[i] + betamax) / 2
+          beta[i] <- 0.5 * (beta[i] + betamax)
         }
-      } else {
+      }
+      else {
         betamax <- beta[i]
         if (is.infinite(betamin)) {
-          beta[i] <- beta[i] / 2
+          beta[i] <- 0.5 * beta[i]
         } else {
-          beta[i] <- (beta[i] + betamin) / 2
+          beta[i] <- 0.5 * (beta[i] + betamin)
         }
       }
 
